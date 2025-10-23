@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Montana AI Dashboard — Rantau, Tapin</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root { color-scheme: light dark; }
+    h2 { text-wrap: balance; }
+    body {
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #f9fafb; color: #1f2937; overflow: hidden;
+      transition: background .4s, color .4s;
+    }
+    html.dark body { background: #0b1220; color: #e5e7eb; }
+    header {
+      position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: center;
+      gap: .75rem; padding: .75rem 1rem; background: white; color: #2563eb; font-weight: 700;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+    html.dark header { background: #0f172a; color: #60a5fa; }
+    .backlink{
+      position:absolute; left:12px; color:#10b981; text-decoration:none; font-weight:600; font-size:14px;
+      background:rgba(16,185,129,.12); padding:.25rem .5rem; border-radius:.5rem;
+    }
+    .backlink:hover{ text-decoration:underline; }
+
+    .slides-container { display: flex; width: 1000%; height: calc(100vh - 130px); transition: transform 800ms cubic-bezier(.77,0,.175,1); }
+    .slide { width: 100vw; height: 100%; flex-shrink: 0; overflow-y: auto; padding: 1rem; scroll-behavior:smooth; }
+    .glass {
+      background: rgba(255,255,255,.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.35); border-radius: 1rem; box-shadow: 0 6px 24px rgba(2,6,23,.08);
+      padding: 1rem; transition: transform .25s, box-shadow .25s;
+    }
+    html.dark .glass { background: rgba(15,23,42,.55); border-color: rgba(255,255,255,.08); box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+    .glass:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(2,6,23,.12); }
+    #mapNursery, #mapWeather { width: 100%; height: 340px; border-radius: 1rem; }
+
+    /* indikator dots (tetap ada) */
+    .indicator { position: fixed; bottom: 72px; left: 0; right: 0; z-index: 50; display: flex; justify-content: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; opacity: .7; transition: transform .3s, background .3s, opacity .3s; cursor: pointer; }
+    .dot.active { background: #2563eb; opacity: 1; transform: scale(1.35); }
+    html.dark .dot { background: #334155; } html.dark .dot.active { background: #60a5fa; }
+
+    /* NAVIGASI ANGKA + KETERANGAN */
+    .navnums {
+      position: fixed; bottom: 8px; left: 0; right: 0; z-index: 50;
+      display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem;
+      padding: .25rem .75rem;
+    }
+    .navnums .row {
+      display:flex; gap:.25rem; flex-wrap:wrap; align-items:center; justify-content:center;
+      background: rgba(255,255,255,.65); border:1px solid rgba(0,0,0,.06); border-radius: .75rem; padding: .35rem;
+    }
+    html.dark .navnums .row { background: rgba(15,23,42,.55); border-color: rgba(255,255,255,.08); }
+    .navbtn {
+      width: 34px; height: 34px; line-height: 34px; text-align:center; border-radius:.5rem;
+      font-weight:700; font-size:.9rem; cursor:pointer; user-select:none;
+      color:#1f2937; background:#f1f5f9; border:1px solid #e2e8f0;
+    }
+    html.dark .navbtn { color:#e5e7eb; background:#0f172a; border-color:#1f2937; }
+    .navbtn.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+    .navhint { font-size:.7rem; color:#64748b; text-align:center; }
+    html.dark .navhint { color:#9ca3af; }
+
+    #loading {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.35); backdrop-filter: blur(4px); z-index: 60; color: #fff; transition: opacity .3s ease-out;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    #loading .box { background: rgba(0,0,0,.5); padding: 12px 16px; border-radius: 10px; display:flex; gap:10px; align-items:center; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg);} }
+    table { border-collapse: collapse; width:100%; }
+    thead { position: sticky; top: 0; z-index: 10; }
+    .ai-note { font-size:.75rem; font-style:italic; text-align:center; margin-top:.75rem; color:#6b7280; }
+    html.dark .ai-note { color:#9ca3af; }
+
+    /* Tambahan untuk responsivitas chart */
+    .chart-container {
+      position: relative;
+      height: 40vh; /* Gunakan viewport height */
+      width: 100%; /* Lebar penuh */
+    }
+    @media (min-width: 768px) { /* Untuk layar lebih besar */
+        .chart-container {
+            height: 100%; /* Kembali ke tinggi normal di desktop */
+        }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">
+    <div class="box"><div class="spinner"></div><div id="loadingText">Memuat…</div></div>
+  </div>
+
+  <button id="darkToggle" class="fixed top-3 right-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-full p-2 z-50 shadow" aria-label="Toggle tema">🌙</button>
+
+  <header>
+    <a href="https://ebastari.github.io/homeadmin/HOME%20-%20admin.html" class="backlink">Menu Utama</a>
+    <span>Montana AI Dashboard</span>
+    <span class="text-xs font-semibold px-2 py-1 rounded-full bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-300">Rantau, Tapin</span>
+  </header>
+
+  <main class="slides-container" id="slides">
+    <!-- SLIDE 1 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">Realisasi Bibit — Seluruh Periode</h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+        <div class="glass text-center"><p class="text-gray-500 dark:text-gray-400 text-xs">Masuk</p><p id="metMasuk" class="text-2xl font-bold text-green-600">-</p></div>
+        <div class="glass text-center"><p class="text-gray-500 dark:text-gray-400 text-xs">Mati</p><p id="metMati" class="text-2xl font-bold text-gray-200">-</p></div>
+        <div class="glass text-center"><p class="text-gray-500 dark:text-gray-400 text-xs">Keluar</p><p id="metKeluar" class="text-2xl font-bold text-red-500">-</p></div>
+        <div class="glass text-center"><p class="text-gray-500 dark:text-gray-400 text-xs">Stok Tersedia</p><p id="metStok" class="text-2xl font-bold text-blue-500">-</p></div>
+        <div class="glass text-center"><p class="text-gray-500 dark:text-gray-400 text-xs">Jenis Bibit</p><p id="metJenis" class="text-2xl font-bold text-emerald-500">-</p></div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="glass"><h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2 text-center">Realisasi Keluar Bibit (per Bulan)</h3><div class="chart-container"><canvas id="chartKeluar"></canvas></div></div>
+        <div class="glass"><h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2 text-center">Total Transaksi per Bulan</h3><div class="chart-container"><canvas id="chartBulan"></canvas></div></div>
+      </div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">Analisis Bibit</h2>
+      <div class="glass mb-4"><h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 text-center">Cashflow Bibit (Masuk vs Keluar+Mati) per Jenis</h3><div class="chart-container" style="height: 50vh;"><canvas id="chartCashflow"></canvas></div></div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="glass"><h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 text-center">Stok Bibit per Jenis (Dinamis)</h3><div class="chart-container"><canvas id="chartStok"></canvas></div></div>
+        <div class="glass"><h3 class="text-sm font-semibold text-blue-700 dark:text-blue-300 text-center">Komposisi Sumber Bibit</h3><div class="chart-container"><canvas id="chartSumber"></canvas></div></div>
+      </div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">Data Realisasi Bibit Harian</h2>
+      <div class="glass overflow-auto" style="height: calc(100% - 60px);"><table class="w-full text-sm"><thead class="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300"><tr><th class="p-2 text-left">Tanggal</th><th class="text-left">Bibit</th><th>Masuk</th><th>Keluar</th><th>Mati</th><th>Total</th></tr></thead><tbody id="tbodyHarian"></tbody></table></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">🗺 Lokasi Penanaman</h2>
+      <div id="mapNursery" class="glass"></div>
+      <div class="text-center mt-3"><a id="myMapsLink" href="https://www.google.com/maps/d/u/0/viewer?ll=-2.983575677635616%2C115.19539149396135&z=17&mid=1AfXkKR1-XB4HGOH8xnj08m-RbUMnL8w" target="_blank" class="inline-block text-sm px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">📍 Lihat di Google My Maps</a><p class="text-xs text-gray-500 mt-1">Tautan My Maps resmi proyek.</p></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 5 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">🌤 Ringkasan Cuaca — Rantau, Tapin</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="glass text-center"><p class="text-xs text-gray-500 dark:text-gray-400">Suhu Saat Ini</p><p id="cardTempNow" class="text-2xl font-bold">- °C</p></div>
+        <div class="glass text-center"><p class="text-xs text-gray-500 dark:text-gray-400">Kecepatan Angin</p><p id="cardWindNow" class="text-2xl font-bold">- km/j</p></div>
+        <div class="glass text-center"><p class="text-xs text-gray-500 dark:text-gray-400">Maks Hari Ini</p><p id="cardTmax" class="text-2xl font-bold">- °C</p></div>
+        <div class="glass text-center"><p class="text-xs text-gray-500 dark:text-gray-400">Peluang Hujan</p><p id="cardRainProb" class="text-2xl font-bold">- %</p></div>
+      </div>
+      <div class="glass text-center p-6 w-full max-w-md mx-auto mt-4"><div id="weatherIcon" class="text-6xl mb-2">⏳</div><p id="weatherDesc" class="text-xl font-bold mb-1">Memuat...</p><p id="weatherData" class="text-gray-700 dark:text-gray-300 text-sm">🌡 - | 💨 -</p><p id="weatherTime" class="text-gray-500 text-xs mt-2"></p></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 6 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">📅 Prakiraan 7 Hari ke Depan</h2>
+      <div id="forecastContainer" class="glass overflow-auto p-2"></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 7 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">🌡️ Grafik Suhu Harian</h2>
+      <div class="glass p-4"><div class="chart-container"><canvas id="chartSuhu"></canvas></div></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 8 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">☔ Peluang Hujan per Hari</h2>
+      <div class="glass p-4"><div class="chart-container"><canvas id="chartHujan"></canvas></div></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 9 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">🌀 Komposit: Suhu & Peluang Hujan</h2>
+      <div class="glass p-4"><div class="chart-container"><canvas id="chartComposite"></canvas></div></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+
+    <!-- SLIDE 10 -->
+    <section class="slide">
+      <h2 class="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3 text-center">🗺 Lokasi Nursery PT EBL — Shabah, Kec. Bungur, Tapin</h2>
+      <div id="mapWeather" class="glass"></div>
+      <div class="text-center mt-3"><p class="text-xs text-gray-500">Plus Code: <b>25CV+2HM</b>, Shabah, Kec. Bungur, Kabupaten Tapin, Kalimantan Selatan</p></div>
+      <p class="ai-note">Data di Analisis Oleh Montana Ai dengan Artificial Intelligence </p>
+    </section>
+  </main>
+
+  <!-- indikator (tetap) -->
+  <div class="indicator" id="dots"></div>
+
+  <!-- NAVIGASI ANGKA + KETERANGAN -->
+  <div class="navnums">
+    <div class="row" id="navRow"></div>
+    <div class="navhint" id="navHint">Gunakan tombol 1–10 untuk lompat slide. Geser/kiri-kanan juga bisa.</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* ========= UTIL & SETUP ========= */
+      const $  = (s) => document.querySelector(s);
+      const $$ = (s) => document.querySelectorAll(s);
+      const showLoading = (b, text = 'Memuat…') => { $('#loading').classList.toggle('hidden', !b); $('#loadingText').textContent = text; };
+
+      let bibitData = [], weatherData = null;
+      let isChartsRendered = false, isWeatherCardsRendered = false, isWeatherChartsRendered = false, isMapNurseryRendered = false, isMapEblRendered = false;
+      let chartRefs = {};
+
+      // Konfigurasi default untuk semua chart
+      const defaultChartOptions = (hasLegend = false) => ({
+          responsive: true,
+          maintainAspectRatio: false, // Penting untuk responsivitas dalam container
+          plugins: {
+              legend: {
+                  display: hasLegend, // Kontrol legenda
+                  position: 'bottom',
+              },
+              datalabels: {
+                  anchor: 'end',
+                  align: 'top',
+                  formatter: (value) => value > 0 ? value.toLocaleString('id-ID') : null, // Tampilkan angka jika > 0
+                  font: { size: 10 },
+                  color: document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937' // Warna dinamis
+              }
+          },
+          scales: {
+              y: { beginAtZero: true }
+          }
+      });
+
+
+      const slideTitles = [
+        'Realisasi Bibit — Seluruh Periode',
+        'Analisis Bibit (Cashflow, Stok, Sumber)',
+        'Data Realisasi Bibit Harian',
+        'Lokasi Penanaman (My Maps)',
+        'Ringkasan Cuaca — Rantau, Tapin',
+        'Prakiraan 7 Hari',
+        'Grafik Suhu',
+        'Peluang Hujan',
+        'Komposit Suhu & Hujan',
+        'Lokasi Nursery PT EBL'
+      ];
+
+      /* ========= FETCH & DATA UTILS ========= */
+      const CACHE_DURATION_MS = 3600000;
+      async function fetchWithCache(url, key) {
+        const cache = localStorage.getItem(key);
+        if (cache) {
+          try {
+            const parsed = JSON.parse(cache);
+            if (Date.now() - parsed.time < CACHE_DURATION_MS) return parsed.data;
+          } catch (e) { console.warn("Cache invalid", e); }
+        }
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`${key} HTTP ${res.status}`);
+        const json = await res.json();
+        const arrKey = Object.keys(json).find(k => Array.isArray(json[k]));
+        const data = json[arrKey] || [];
+        localStorage.setItem(key, JSON.stringify({ time: Date.now(), data }));
+        return data;
+      }
+
+      const toNum = (v) => {
+        if (typeof v === 'number') return v;
+        if (!v) return 0;
+        const s = String(v).replace(/[^\d\-.,]/g, '').replace(',', '.');
+        const n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+      };
+
+      const parseFlexibleDate = (tgl) => {
+        if (!tgl) return null;
+        let d = null;
+        if (/\d{4}-\d{2}-\d{2}/.test(tgl)) d = new Date(tgl);
+        else if (/\d{2}\/\d{2}\/\d{4}/.test(tgl)) {
+          const [dd, mm, yy] = tgl.split('/').map(Number);
+          d = new Date(yy, mm - 1, dd);
+        } else {
+          const tryD = new Date(tgl);
+          if (!isNaN(tryD)) d = tryD;
+        }
+        return d && !isNaN(d) ? d : null;
+      };
+
+      const normalizeBibit = (raw) => raw.map(r => {
+        const tgl   = r.Tanggal || r.tanggal || r.date || r.tgl || '';
+        const bibit = (r.Bibit || r.bibit || r.jenis || 'Tidak Diketahui').toString().trim();
+        const masuk = toNum(r.Masuk || r.masuk);
+        const keluar= toNum(r.Keluar || r.keluar);
+        const mati  = toNum(r.Mati || r.mati);
+        const sumber= r.Sumber || r.sumber || r.asal || 'Tidak Diketahui';
+        const d = parseFlexibleDate(tgl);
+        return { bibit, masuk, keluar, mati, sumber, __date: d };
+      }).filter(r => r.__date);
+
+      const cleanData = (rows) => rows.filter(r => r.bibit && r.bibit.toLowerCase() !== 'rambutan');
+      const groupBy = (arr, keyFn) => arr.reduce((acc, it) => { const k = keyFn(it); (acc[k] ||= []).push(it); return acc; }, {});
+      const monthLabel = (d) => d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+
+      /* ========= RENDER ========= */
+      function renderMetrikBibit(rows){
+        const masuk = rows.reduce((a, b) => a + b.masuk, 0);
+        const keluar = rows.reduce((a, b) => a + b.keluar, 0);
+        const mati = rows.reduce((a, b) => a + b.mati, 0);
+        const stok = masuk - keluar - mati;
+        const jenis = [...new Set(rows.map(r => r.bibit).filter(Boolean))].length;
+        $('#metMasuk').textContent  = masuk.toLocaleString('id-ID');
+        $('#metKeluar').textContent = keluar.toLocaleString('id-ID');
+        $('#metMati').textContent   = mati.toLocaleString('id-ID');
+        $('#metStok').textContent   = stok.toLocaleString('id-ID');
+        $('#metJenis').textContent  = jenis.toLocaleString('id-ID');
+      }
+
+      function renderTabelBibit(rows){
+        const tbody = $('#tbodyHarian');
+        const sorted = rows.slice().sort((a, b) => b.__date - a.__date).slice(0, 300);
+        tbody.innerHTML = sorted.map(r => `<tr class="border-b dark:border-slate-800"><td class="p-2 text-left">${new Date(r.__date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td><td>${r.bibit}</td><td class="text-center">${r.masuk}</td><td class="text-center">${r.keluar}</td><td class="text-center">${r.mati}</td><td class="text-center font-semibold">${r.masuk - r.keluar - r.mati}</td></tr>`).join('');
+      }
+
+      function ensureCharts() {
+        if (!window.Chart || isChartsRendered) return;
+        Chart.register(ChartDataLabels);
+        isChartsRendered = true;
+      }
+
+      function renderBibitCharts(data) {
+        ensureCharts();
+        const perJenis = groupBy(data, it => it.bibit);
+        const stokLabels = Object.keys(perJenis).sort();
+
+        // Stok per jenis
+        const stokValues = stokLabels.map(k => perJenis[k].reduce((s, r) => s + r.masuk - r.keluar - r.mati, 0));
+        if (chartRefs.stok) chartRefs.stok.destroy();
+        chartRefs.stok = new Chart($('#chartStok').getContext('2d'), { type: 'bar', data: { labels: stokLabels, datasets: [{ label: 'Stok', data: stokValues, backgroundColor: 'rgba(59,130,246,0.75)' }] }, options: defaultChartOptions() });
+
+        // Cashflow per jenis
+        const masukVals = stokLabels.map(k => perJenis[k].reduce((s, r) => s + r.masuk, 0));
+        const outVals = stokLabels.map(k => perJenis[k].reduce((s, r) => s + r.keluar + r.mati, 0));
+        if (chartRefs.cash) chartRefs.cash.destroy();
+        chartRefs.cash = new Chart($('#chartCashflow').getContext('2d'), { type: 'line', data: { labels: stokLabels, datasets: [{ label: 'Masuk', data: masukVals, borderColor: 'rgba(34,197,94,1)', backgroundColor: 'rgba(34,197,94,0.2)', fill: true, tension: .3 }, { label: 'Keluar+Mati', data: outVals, borderColor: 'rgba(239,68,68,1)', backgroundColor: 'rgba(239,68,68,0.12)', fill: true, tension: .3 }] }, options: defaultChartOptions(true) });
+
+        // Keluar per bulan
+        const perBulan = groupBy(data, it => new Date(it.__date.getFullYear(), it.__date.getMonth(), 1).toISOString());
+        const bulanKeys = Object.keys(perBulan).sort();
+        const bulanLabels = bulanKeys.map(k => monthLabel(new Date(k)));
+        const keluarPerBulan = bulanKeys.map(k => perBulan[k].reduce((s, r) => s + r.keluar, 0));
+        const totalTransaksi = bulanKeys.map(k => perBulan[k].reduce((s, r) => s + r.masuk + r.keluar + r.mati, 0));
+        if (chartRefs.keluar) chartRefs.keluar.destroy();
+        chartRefs.keluar = new Chart($('#chartKeluar').getContext('2d'), { type: 'bar', data: { labels: bulanLabels, datasets: [{ label: 'Keluar', data: keluarPerBulan, backgroundColor: 'rgba(59,130,246,0.75)' }] }, options: defaultChartOptions() });
+        if (chartRefs.totalBulan) chartRefs.totalBulan.destroy();
+        chartRefs.totalBulan = new Chart($('#chartBulan').getContext('2d'), { type: 'bar', data: { labels: bulanLabels, datasets: [{ label: 'Total', data: totalTransaksi, backgroundColor: 'rgba(34,197,94,0.75)' }] }, options: defaultChartOptions() });
+
+        // Komposisi sumber
+        const perSumber = groupBy(data, it => (it.sumber || 'Tidak Diketahui').toString());
+        const sumberLabels = Object.keys(perSumber);
+        const sumberValues = sumberLabels.map(k => perSumber[k].reduce((s, r) => s + r.masuk, 0));
+        if (chartRefs.sumber) chartRefs.sumber.destroy();
+        chartRefs.sumber = new Chart($('#chartSumber').getContext('2d'), { type: 'doughnut', data: { labels: sumberLabels, datasets: [{ data: sumberValues, backgroundColor: ['rgba(34,197,94,0.85)', 'rgba(59,130,246,0.85)', 'rgba(249,115,22,0.85)', 'rgba(139,92,246,0.85)', 'rgba(20,184,166,0.85)'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, datalabels: { formatter: (v, ctx) => { const total = ctx.chart.getDatasetMeta(0).total; const perc = (v / total * 100).toFixed(1); return `${perc}%`; }, color: '#fff' } } } });
+      }
+
+      // CUACA
+      function renderWeatherNow(data){
+        if(isWeatherCardsRendered) return;
+        const w=data.current_weather; let i="☀️";
+        if(w.weathercode>=1&&w.weathercode<=3)i="🌤"; else if(w.weathercode>=45&&w.weathercode<=48)i="🌫"; else if(w.weathercode>=51&&w.weathercode<=67)i="🌧"; else if(w.weathercode>=71&&w.weathercode<=77)i="❄️"; else if(w.weathercode>=80)i="⛈";
+        $('#weatherIcon').textContent=i; $('#weatherDesc').textContent="Rantau, Tapin"; $('#weatherData').textContent=`🌡 ${w.temperature}°C | 💨 ${w.windspeed} km/jam`; $('#weatherTime').textContent=`Diperbarui: ${new Date(w.time).toLocaleString('id-ID')}`;
+        const d=data.daily; $('#cardTempNow').textContent=`${w.temperature}°C`; $('#cardWindNow').textContent=`${w.windspeed} km/j`; $('#cardTmax').textContent=`${d.temperature_2m_max[0]}°C`; $('#cardRainProb').textContent=`${d.precipitation_probability_max[0]}%`;
+        isWeatherCardsRendered=true;
+      }
+
+      function renderForecastTable(daily){
+        $('#forecastContainer').innerHTML = `<table class="w-full text-sm"><thead class="bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300"><tr><th class="p-2 text-left">Tanggal</th><th>Ikon</th><th>Suhu (°C)</th><th>Peluang Hujan (%)</th></tr></thead><tbody class="text-center">${daily.time.map((t,i)=>{const p=daily.precipitation_probability_max[i]??0; const o=p>60?'⛈':p>30?'🌧':'🌤'; const s=new Date(t).toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'}); const n=daily.temperature_2m_min[i], a=daily.temperature_2m_max[i]; return `<tr class="border-b dark:border-slate-800"><td class="p-2 text-left">${s}</td><td>${o}</td><td>${n}–${a}</td><td>${p}%</td></tr>`;}).join('')}</tbody></table>`;
+      }
+
+      function renderWeatherCharts(d){
+        if(isWeatherChartsRendered||!window.Chart)return;
+        Chart.register(ChartDataLabels);
+        const l=d.time.map(t=>new Date(t).toLocaleDateString('id-ID',{weekday:'short'}));
+        const optionsSuhu = defaultChartOptions(true);
+        const optionsHujan = defaultChartOptions(); optionsHujan.scales.y.max = 100; optionsHujan.plugins.datalabels.formatter = v => `${v}%`;
+        const optionsComposite = defaultChartOptions(true);
+        optionsComposite.scales = { y: { beginAtZero: true, max: 100, title: { display: true, text: '% Hujan' } }, y1: { position: 'right', beginAtZero: false, title: { display: true, text: '°C' }, grid: { drawOnChartArea: false } } };
+        optionsComposite.plugins.datalabels.formatter = (v, c) => c.dataset.type === 'bar' ? `${v}%` : v;
+
+        new Chart($('#chartSuhu').getContext('2d'),{ type:'line', data:{labels:l,datasets:[{label:'Suhu Maks (°C)',data:d.temperature_2m_max,borderColor:'rgba(234,88,12,1)',backgroundColor:'rgba(234,88,12,0.2)',fill:true,tension:.35},{label:'Suhu Min (°C)',data:d.temperature_2m_min,borderColor:'rgba(59,130,246,1)',backgroundColor:'rgba(59,130,246,0.2)',fill:true,tension:.35}]}, options:optionsSuhu });
+        new Chart($('#chartHujan'),{ type:'bar', data:{labels:l,datasets:[{label:'Peluang Hujan (%)',data:d.precipitation_probability_max,backgroundColor:'rgba(34,197,94,0.75)'}]}, options:optionsHujan });
+        new Chart($('#chartComposite'),{ type:'bar', data:{labels:l,datasets:[{type:'bar',label:'Peluang Hujan (%)',data:d.precipitation_probability_max,backgroundColor:'rgba(34,197,94,0.65)',yAxisID:'y'},{type:'line',label:'Suhu Maks (°C)',data:d.temperature_2m_max,borderColor:'rgba(234,88,12,1)',backgroundColor:'rgba(234,88,12,0.1)',fill:true,tension:.35,yAxisID:'y1'}]}, options:optionsComposite });
+        isWeatherChartsRendered=true;
+      }
+
+      // PETA
+      function initMapNursery(){
+        if(isMapNurseryRendered||!window.L)return;
+        const lat = -2.983575677635616, lon = 115.19539149396135;
+        const map=L.map('mapNursery').setView([lat,lon],17);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+        L.marker([lat,lon]).addTo(map).bindPopup(`<div class="text-sm font-semibold text-blue-700">Area Penanaman</div><div class="text-xs text-gray-600">Koordinat My Maps</div>`);
+        isMapNurseryRendered=true;
+      }
+
+      function initMapEBL(){
+        if(isMapEblRendered||!window.L)return;
+        const lat = -2.983575677635616, lon = 115.19539149396135;
+        const map=L.map('mapWeather').setView([lat,lon],16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+        L.marker([lat,lon]).addTo(map).bindPopup("<b>Nursery PT EBL</b><br>25CV+2HM, Shabah, Kec. Bungur, Tapin");
+        isMapEblRendered=true;
+      }
+
+      /* ========= SLIDER & NAV ========= */
+      const slides = $('#slides'), dotsWrap = $('#dots'), totalSlides = 10;
+      let currentSlide = 0, autoplay;
+
+      for (let i = 0; i < totalSlides; i++) { const d = document.createElement('div'); d.className = 'dot'; d.addEventListener('click', () => { stopAutoplay(); handleSlideChange(i); }); dotsWrap.appendChild(d); }
+      const dots = $$('.dot');
+
+      const navRow = $('#navRow');
+      const navButtons = [];
+      for (let i=0;i<totalSlides;i++){ const b = document.createElement('button'); b.className = 'navbtn'; b.textContent = (i+1); b.title = slideTitles[i]; b.addEventListener('click', ()=>{ stopAutoplay(); handleSlideChange(i); }); navRow.appendChild(b); navButtons.push(b); }
+      const navHint = $('#navHint');
+
+      function updateNav() {
+        dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+        navButtons.forEach((btn, i) => btn.classList.toggle('active', i === currentSlide));
+        navHint.textContent = `${currentSlide+1}. ${slideTitles[currentSlide]} — gunakan angka 1–10 untuk navigasi cepat.`;
+      }
+
+      function handleSlideChange(newIndex) {
+        currentSlide = newIndex;
+        slides.style.transform = `translateX(-${currentSlide * 100}vw)`;
+        updateNav();
+        switch (currentSlide) {
+          case 0: case 1: case 2: renderTabelBibit(bibitData); renderBibitCharts(bibitData); break;
+          case 3: initMapNursery(); break;
+          case 4: if (weatherData && !isWeatherCardsRendered) { renderWeatherNow(weatherData); renderForecastTable(weatherData.daily); } break;
+          case 5: if (weatherData) renderForecastTable(weatherData.daily); break;
+          case 6: case 7: case 8: if (weatherData) renderWeatherCharts(weatherData.daily); break;
+          case 9: initMapEBL(); break;
+        }
+      }
+      function nextSlide() { handleSlideChange((currentSlide + 1) % totalSlides); }
+      function prevSlide() { handleSlideChange((currentSlide - 1 + totalSlides) % totalSlides); }
+      const startAutoplay = () => { autoplay = setInterval(nextSlide, 7000); }, stopAutoplay = () => clearInterval(autoplay);
+
+      /* ========= INISIALISASI ========= */
+      async function main() {
+        showLoading(true, 'Menyiapkan antarmuka...');
+        $('#darkToggle').onclick = () => { document.documentElement.classList.toggle('dark'); $('#darkToggle').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙'; };
+        document.addEventListener('keydown', e => { if (e.key === 'ArrowRight') nextSlide(); if (e.key === 'ArrowLeft') prevSlide(); if (e.key >= '1' && e.key <= String(totalSlides)) { stopAutoplay(); handleSlideChange(parseInt(e.key,10)-1); } });
+        let touchStartX = 0;
+        slides.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; stopAutoplay(); }, { passive: true });
+        slides.addEventListener('touchend', e => { const touchEndX = e.changedTouches[0].screenX; if (touchEndX < touchStartX - 50) nextSlide(); if (touchEndX > touchStartX + 50) prevSlide(); }, { passive: true });
+
+        try {
+          const sheetyBibitUrl = 'https://api.sheety.co/ecf70bd684db7a654a0aa41957dff1a8/nursery/bibit';
+          const bibitRaw = await fetchWithCache(sheetyBibitUrl, 'bibitCacheV3');
+          bibitData = cleanData(normalizeBibit(bibitRaw));
+          renderMetrikBibit(bibitData);
+          renderTabelBibit(bibitData);
+          renderBibitCharts(bibitData);
+        } catch (e) { console.error('Gagal memuat data bibit:', e); alert('Gagal memuat data utama bibit dari Sheety.');
+        } finally { showLoading(false); startAutoplay(); }
+
+        (async () => {
+          try {
+            const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=-3.33&longitude=115.79&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FMakassar';
+            const res = await fetch(weatherUrl);
+            if (!res.ok) throw new Error('Weather fetch failed');
+            weatherData = await res.json();
+            if (currentSlide >= 4) { handleSlideChange(currentSlide); }
+          } catch (e) { console.error('Gagal memuat data cuaca:', e); $('#weatherDesc').textContent = 'Gagal memuat cuaca'; }
+        })();
+
+        handleSlideChange(0);
+      }
+      main();
+    });
+  </script>
+</body>
+</html>
