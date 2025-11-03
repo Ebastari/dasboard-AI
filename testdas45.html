@@ -19,7 +19,7 @@
       margin:0; background:#f8fafc; color:#0f172a; transition:background .25s,color .25s; overflow:hidden;
     }
     html.dark body{ background:#071028; color:#e6eef8; }
-    header{ position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:.75rem;
+    header{ position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:.75rem;
       padding:.75rem 1rem; background:white; box-shadow:0 2px 10px rgba(2,6,23,.06); font-weight:700; }
     html.dark header{ background:#031027; box-shadow:0 2px 12px rgba(0,0,0,.6); color:#7dd3fc; }
 
@@ -40,15 +40,12 @@
     html.dark .card .title { color:#9ca3af; }
     .card .value { font-size:1.5rem; font-weight:700; margin-top:.35rem; }
 
-    /* small table styling */
     table { width:100%; border-collapse:collapse; font-size:.92rem; }
     th,td { padding:.5rem .6rem; text-align:left; border-bottom:1px solid rgba(0,0,0,.06); }
     html.dark th, html.dark td { border-bottom:1px solid rgba(255,255,255,.04); }
 
-    /* map sizes */
     #mapNursery, #mapWeather { width:100%; height:360px; border-radius:12px; }
 
-    /* dots & nav */
     .indicator { position:fixed; bottom:88px; left:0; right:0; display:flex; justify-content:center; gap:8px; z-index:50; pointer-events:auto; }
     .dot{ width:10px;height:10px;border-radius:50%; background:#cbd5e1; opacity:.85; cursor:pointer; transition:transform .2s, background .2s; }
     .dot.active{ background:#2563eb; transform:scale(1.35); }
@@ -59,7 +56,6 @@
     html.dark .navbtn{ background:#07162a; border-color:rgba(255,255,255,.04); color:#e6eef8; }
     .navbtn.active{ background:#2563eb; color:#fff; border-color:#2563eb; }
 
-    /* loading overlay */
     #loading{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:rgba(2,6,23,.25); }
     #loading .box{ background:rgba(255,255,255,.92); padding:12px 16px; border-radius:10px; display:flex; gap:10px; align-items:center; }
     html.dark #loading .box{ background:rgba(3,6,12,.72); color:#e6eef8; }
@@ -85,22 +81,24 @@
 
   <!-- HEADER -->
   <header>
-    <div style="display:flex;align-items:center;gap:.75rem;">
+    <div style="display:flex;align-items:center;gap:.75rem;width:100%;">
       <div style="font-weight:900">Montana AI Dashboard</div>
       <div style="font-size:.85rem; padding:.25rem .5rem; border-radius:.5rem; background:rgba(37,99,235,.08); color:#2563eb;">Rantau, Tapin</div>
+      <!-- tombol refresh -->
+      <button id="btnRefreshData" class="ml-auto bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 text-sm">
+        🔄 Segarkan Data
+      </button>
     </div>
   </header>
 
   <!-- SLIDES -->
   <main class="slides-container" id="slides">
 
-    <!-- SLIDE 1: Semua jenis semuanya periode -->
+    <!-- SLIDE 1 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Realisasi Bibit — Seluruh Periode (Semua Jenis)</h2>
 
-      <div class="cards mb-4" id="cardsAll">
-        <!-- cards injected -->
-      </div>
+      <div class="cards mb-4" id="cardsAll"></div>
 
       <div class="grid md:grid-cols-2 gap-4">
         <div class="glass">
@@ -114,7 +112,7 @@
       </div>
     </section>
 
-    <!-- SLIDE 2: Analisis bibit (semua jenis) -->
+    <!-- SLIDE 2 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Analisis Bibit</h2>
       <div class="glass mb-4">
@@ -134,7 +132,7 @@
       </div>
     </section>
 
-    <!-- SLIDE 3: Tabel HARiAN - HANYA Sengon Potting -->
+    <!-- SLIDE 3 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Data Realisasi Harian — <span style="color:#2563eb">Sengon Potting</span></h2>
       <div class="glass overflow-auto" style="height:calc(100% - 64px);">
@@ -150,11 +148,10 @@
       <p style="font-size:.85rem; margin-top:.6rem; color:#475569;">(Menampilkan 300 data terbaru untuk "Sengon Potting")</p>
     </section>
 
-    <!-- SLIDE 4: Lokasi Penanaman (My Maps embed) -->
+    <!-- SLIDE 4 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Lokasi Penanaman</h2>
       <div class="glass mb-3" style="padding:0;">
-        <!-- embed MyMaps as iframe for preview -->
         <iframe id="iframeMyMaps" src="https://ebastari.github.io/mapsmontana/mymaps.html" style="width:100%; height:460px; border:0; border-radius:12px;"></iframe>
       </div>
       <div style="text-align:center;">
@@ -162,7 +159,7 @@
       </div>
     </section>
 
-    <!-- SLIDE 5: Ringkasan Cuaca -->
+    <!-- SLIDE 5 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Ringkasan Cuaca — Rantau, Tapin</h2>
 
@@ -181,31 +178,31 @@
       </div>
     </section>
 
-    <!-- SLIDE 6: Prakiraan 7 hari -->
+    <!-- SLIDE 6 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Prakiraan 7 Hari</h2>
       <div class="glass" id="forecastContainer"></div>
     </section>
 
-    <!-- SLIDE 7: Grafik Suhu -->
+    <!-- SLIDE 7 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Grafik Suhu Harian</h2>
       <div class="glass chart-container"><canvas id="chartSuhu"></canvas></div>
     </section>
 
-    <!-- SLIDE 8: Peluang Hujan -->
+    <!-- SLIDE 8 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Peluang Hujan per Hari</h2>
       <div class="glass chart-container"><canvas id="chartHujan"></canvas></div>
     </section>
 
-    <!-- SLIDE 9: Komposit -->
+    <!-- SLIDE 9 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Komposit: Suhu & Peluang Hujan</h2>
       <div class="glass chart-container"><canvas id="chartComposite"></canvas></div>
     </section>
 
-    <!-- SLIDE 10: Lokasi Nursery PT EBL -->
+    <!-- SLIDE 10 -->
     <section class="slide">
       <h2 class="text-center text-lg font-semibold mb-3">Lokasi Nursery PT EBL — Shabah, Bungur, Tapin</h2>
       <div id="mapWeather" class="glass"></div>
@@ -214,167 +211,213 @@
       </div>
     </section>
 
-    <!-- SLIDE 11: Montana AI Voice Briefing -->
-<section class="slide" id="slideAI">
-  <h2 class="text-center text-lg font-semibold mb-3 text-green-600 dark:text-green-400">
-    🎙️ Montana AI — Daily Voice Briefing
-  </h2>
+    <!-- SLIDE 11 -->
+    <section class="slide" id="slideAI">
+      <h2 class="text-center text-lg font-semibold mb-3 text-green-600 dark:text-green-400">
+        🎙️ Montana AI — Daily Voice Briefing
+      </h2>
 
-  <div class="glass p-4 flex flex-col md:flex-row items-start gap-4">
-    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="AI Robot" 
-         class="w-24 h-24 md:w-32 md:h-32 animate-bounce" />
-    <div class="flex-1">
-      <div id="aiNarrative" class="text-base leading-relaxed whitespace-pre-wrap">
-        Klik tombol <b>“Mulai Briefing”</b> untuk mendengarkan laporan harian Montana AI 📢
+      <div class="glass p-4 flex flex-col md:flex-row items-start gap-4">
+        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="AI Robot"
+             class="w-24 h-24 md:w-32 md:h-32 animate-bounce" />
+        <div class="flex-1">
+          <div id="aiNarrative" class="text-base leading-relaxed whitespace-pre-wrap">
+            Klik tombol <b>“Mulai Briefing”</b> untuk mendengarkan laporan harian Montana AI 📢
+          </div>
+          <div id="aiStatus" class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Menunggu izin pengguna untuk memutar suara...
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button id="btnStartAI" class="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700">
+              ▶️ Mulai Briefing
+            </button>
+            <button id="btnReplayAI" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 hidden">
+              🔁 Ulangi Narasi
+            </button>
+          </div>
+        </div>
       </div>
-      <div id="aiStatus" class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-        Menunggu izin pengguna untuk memutar suara...
-      </div>
-      <div class="mt-3 flex gap-2">
-        <button id="btnStartAI" class="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700">
-          ▶️ Mulai Briefing
-        </button>
-        <button id="btnReplayAI" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 hidden">
-          🔁 Ulangi Narasi
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+    </section>
 
   </main>
 
-  <!-- INDICATOR DOTS -->
+  <!-- INDICATOR DOTS & NAV -->
   <div class="indicator" id="dots"></div>
-
-  <!-- NAV NUMBERS -->
   <div class="navnums" id="navnums" aria-hidden="false" style="pointer-events:auto;">
     <div style="display:flex; gap:.4rem;" id="navRow"></div>
   </div>
 
-  <!-- FOOTER: fitur ringkasan -->
+  <!-- FOOTER -->
   <footer>
     <div style="max-width:1100px;margin:0 auto;">
       <strong>Ringkasan fitur:</strong>
       <ul style="margin-top:.5rem; margin-left:1rem;">
-        <li><b>Slide 1</b>: Semua jenis bibit & seluruh periode — metrik (Masuk, Mati, Keluar, Stok, Jenis) + grafik.</li>
+        <li><b>Slide 1</b>: Semua jenis bibit & seluruh periode — metrik + grafik.</li>
         <li><b>Slide 2</b>: Analisis (cashflow, stok per jenis, komposisi sumber).</li>
         <li><b>Slide 3</b>: Tabel harian — <em>Hanya</em> "Sengon Potting" (300 data terbaru).</li>
         <li><b>Slide 4</b>: My Maps embed (polygon/marker dari proyek My Maps).</li>
         <li><b>Slide 5–9</b>: Cuaca real-time & prakiraan (Open-Meteo) + grafik suhu/hujan & komposit.</li>
         <li><b>Slide 10</b>: Peta lokasi nursery PT EBL (koordinat & plus code).</li>
       </ul>
-      <p style="margin-top:.6rem; font-size:.88rem; color:#64748b;">Data bibit diambil dari endpoint Apps Script Anda (tidak mengubah Apps Script). Cache lokal 6 jam untuk menghemat kueri (ringan di HP).</p>
-      <div style="margin-top:.8rem; font-size:.85rem; color:#94a3b8;">© Montana AI — Dashboard (auto-generated UI). Untuk perubahan field/kolom spreadsheet, pastikan header kolom menggunakan label: Tanggal, Bibit, Masuk, Keluar, Mati, Total, Sumber, Tujuan.</div>
+      <p style="margin-top:.6rem; font-size:.88rem; color:#64748b;">Data bibit dari Apps Script. Cache lokal 6 jam.</p>
+      <div style="margin-top:.8rem; font-size:.85rem; color:#94a3b8;">© Montana AI — Dashboard.</div>
     </div>
   </footer>
 
-<script>
+  <script>
 /* ================== KONFIG ================== */
-/*
-  Important:
-  - Slide 1 & 2 use ALL data
-  - Slide 3 shows only Sengon Potting (case-insensitive)
-  - Cache duration: 6 hours (21600000 ms)
-  - SHEET_URL should point to your Apps Script "exec" endpoint that returns JSON array
-*/
 const SHEET_URL = "https://script.google.com/macros/s/AKfycby09rbjwN2EcVRwhsNBx8AREI7k41LY1LrZ-W4U36HmzMB5BePD9h8wBSVPJwa_Ycduvw/exec?sheet=Bibit";
-const CACHE_KEY = "montana_bibit_cache_v1";
-const CACHE_DURATION_MS = 6 * 60 * 60 * 1000; // 6 jam
-const LAT = -3.33, LON = 115.79; // Rantau, Tapin
-const NURSERY_COORD = [-2.983575677635616,115.19539149396135]; // PT EBL nursery (slide 10)
+const CACHE_KEY = "montana_bibit_cache_v4";           // versi baru
+const CACHE_DURATION_MS = 6 * 60 * 60 * 1000;         // 6 jam
+const LAT = -3.33, LON = 115.79;                      // Rantau, Tapin
+const NURSERY_COORD = [-2.983575677635616,115.19539149396135];
 
 let bibitDataAll = [];
 let weatherData = null;
-let charts = {}; // references to destroy charts before re-create
+let charts = {}; // references Chart.js
 
-// small helpers
-const $ = (sel)=>document.querySelector(sel);
+/* ================== HELPERS ================== */
+const $  = (sel)=>document.querySelector(sel);
 const $$ = (sel)=>Array.from(document.querySelectorAll(sel));
-const showLoading = (txt)=>{ const L = document.getElementById('loading'); if(txt){ document.getElementById('loadingText').textContent = txt; L.style.display='flex'; } else { L.style.display='none'; } };
+const showLoading = (txt)=>{ const L = $('#loading'); if(txt){ $('#loadingText').textContent = txt; L.style.display='flex'; } else { L.style.display='none'; } };
 
-// safe parse number
+// robust number parser: "1.234,56" / "1,234.56" / "1234"
 function toNum(v){
   if(v === null || v === undefined || v === "") return 0;
-  if(typeof v === "number") return v;
-  let s = String(v).replace(/[^\d\-.,]/g,'').replace(',', '.');
+  if(typeof v === "number" && isFinite(v)) return v;
+  let s = String(v).trim();
+
+  // remove spaces
+  s = s.replace(/\s+/g,'');
+  // if both separators exist, decide thousands & decimal
+  const hasDot = s.indexOf('.') !== -1;
+  const hasComma = s.indexOf(',') !== -1;
+
+  if(hasDot && hasComma){
+    // last occurrence is decimal
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if(lastComma > lastDot){
+      // dot thousands, comma decimal -> remove dots, replace comma with dot
+      s = s.replace(/\./g,'').replace(',', '.');
+    }else{
+      // comma thousands, dot decimal -> remove commas
+      s = s.replace(/,/g,'');
+    }
+  } else if(hasComma && !hasDot){
+    // assume comma decimal
+    s = s.replace(/\./g,'').replace(',', '.');
+  } else {
+    // plain or dot decimal, strip thousands commas if any
+    s = s.replace(/,/g,'');
+  }
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
 
-// parse flexible date
+// parse flexible date (ISO, dd/mm/yyyy, m/d/yy, etc.)
 function parseDate(v){
   if(!v) return null;
-  // if already Date
-  if(v instanceof Date) return v;
+  if(v instanceof Date && !isNaN(v)) return v;
+  const s = String(v).trim();
+
   // ISO-like
-  if(/^\d{4}-\d{2}-\d{2}/.test(v)) return new Date(v);
-  // dd/mm/yyyy
-  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)){
-    const parts = v.split('/');
-    return new Date(+parts[2], +parts[1]-1, +parts[0]);
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+
+  // dd/mm/yyyy or d/m/yyyy
+  if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+    const [d,m,y] = s.split('/').map(Number);
+    const dt = new Date(y, m-1, d);
+    return isNaN(dt) ? null : dt;
   }
-  const d = new Date(v);
+
+  // try native
+  const d = new Date(s);
   return isNaN(d) ? null : d;
 }
 
-// fetch with localStorage cache
+/* ================== CACHE FETCH ================== */
 async function fetchWithCache(url){
-  try {
+  try{
+    // Always wipe old v1 per requirement
+    localStorage.removeItem("montana_bibit_cache_v1");
+
     const raw = localStorage.getItem(CACHE_KEY);
     if(raw){
       try{
         const parsed = JSON.parse(raw);
-        if(Date.now() - parsed.time < CACHE_DURATION_MS) {
+        if(Date.now() - parsed.time < CACHE_DURATION_MS){
           return parsed.data;
         }
       }catch(e){}
     }
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
-    // handle both array or object-with-array
+
     let rows = [];
     if(Array.isArray(json)) rows = json;
     else {
-      // attempt to find first array field
       const arrField = Object.keys(json).find(k => Array.isArray(json[k]));
       rows = arrField ? json[arrField] : [];
-      if(!rows && Array.isArray(json)) rows = json;
     }
     localStorage.setItem(CACHE_KEY, JSON.stringify({time:Date.now(), data:rows}));
     return rows;
-  } catch (e) {
+  }catch(e){
     console.error("fetchWithCache error", e);
     throw e;
   }
 }
 
-// normalize rows to unified fields
-function normalizeRows(raw){
+/* ========== DATA SANITIZER: ENSURE GAMAL (DI RAW, SEBELUM NORMALIZE) ========== */
+function ensureGamalRaw(raw){
+  // memenuhi requirement: dijalankan SEBELUM normalisasi
+  if(!Array.isArray(raw)) return raw;
   return raw.map(r=>{
-    // support different header casings
-    const Tanggal = r.Tanggal || r.tanggal || r.date || r.tgl || r.Date || '';
-    const Bibit = (r.Bibit || r.bibit || r.Jenis || r.jenis || '').toString().trim();
-    const Masuk = toNum(r.Masuk || r.masuk || r.In || r.in || 0);
-    const Keluar = toNum(r.Keluar || r.keluar || r.Out || r.out || 0);
-    const Mati = toNum(r.Mati || r.mati || 0);
-    const Total = toNum(r.Total || r.total || 0);
-    const Sumber = r.Sumber || r.sumber || r.Asal || r.asal || '';
-    const Tujuan = r.Tujuan || r.tujuan || '';
-    const __date = parseDate(Tanggal);
-    return { Tanggal, Bibit, Masuk, Keluar, Mati, Total, Sumber, Tujuan, __date };
-  }).filter(x=>x.__date); // drop rows without parseable date
+    const bibitRaw = (r.Bibit ?? r.bibit ?? r.Jenis ?? r.jenis ?? "").toString().toLowerCase();
+    const isGamal = bibitRaw.includes("gamal");
+    if(!isGamal) return r;
+
+    // pastikan angka valid
+    const fix = {...r};
+    fix.Masuk  = toNum(fix.Masuk  ?? fix.masuk  ?? fix.In ?? fix.in  ?? 0);
+    fix.Keluar = toNum(fix.Keluar ?? fix.keluar ?? fix.Out ?? fix.out ?? 0);
+    fix.Mati   = toNum(fix.Mati   ?? fix.mati   ?? 0);
+
+    // tanggal minimal harus bisa diparse, kalau tidak: isi tanggal hari ini (agar tidak crash)
+    const tgl = fix.Tanggal ?? fix.tanggal ?? fix.date ?? fix.tgl ?? fix.Date ?? "";
+    if(!parseDate(tgl)){
+      console.warn('⚠️ Data "Gamal" tanpa tanggal valid. Diisi tanggal hari ini:', fix);
+      fix.Tanggal = new Date().toISOString().slice(0,10);
+    }
+    return fix;
+  });
 }
 
-/* ==================== RENDER UI / CHARTS ==================== */
+/* ================== NORMALISASI ================== */
+function normalizeRows(raw){
+  return raw.map(r=>{
+    const Tanggal = r.Tanggal || r.tanggal || r.date || r.tgl || r.Date || '';
+    const Bibit   = (r.Bibit || r.bibit || r.Jenis || r.jenis || '').toString().trim();
+    const Masuk   = toNum(r.Masuk || r.masuk || r.In || r.in || 0);
+    const Keluar  = toNum(r.Keluar || r.keluar || r.Out || r.out || 0);
+    const Mati    = toNum(r.Mati || r.mati || 0);
+    const Sumber  = r.Sumber || r.sumber || r.Asal || r.asal || '';
+    const Tujuan  = r.Tujuan || r.tujuan || '';
+    const __date  = parseDate(Tanggal);
+    return { Tanggal, Bibit, Masuk, Keluar, Mati, Sumber, Tujuan, __date };
+  }).filter(x=>x.__date); // buang baris tanpa tanggal valid
+}
 
+/* ==================== RENDER KARTU ==================== */
 function renderCards(all){
+  // total kronologis akan dipakai dari hasil rekap di renderAllCharts
   const masuk = all.reduce((s,r)=>s + r.Masuk,0);
   const keluar = all.reduce((s,r)=>s + r.Keluar,0);
   const mati = all.reduce((s,r)=>s + r.Mati,0);
   const stok = masuk - keluar - mati;
   const jenis = Array.from(new Set(all.map(r=>r.Bibit).filter(Boolean))).length;
+
   const container = $('#cardsAll');
   container.innerHTML = `
     <div class="glass card"><div class="title">Masuk</div><div class="value" id="valMasuk">${masuk.toLocaleString('id-ID')}</div></div>
@@ -385,63 +428,65 @@ function renderCards(all){
   `;
 }
 
-// destroy chart safely
-function destroyChart(key){
-  try{ if(charts[key]){ charts[key].destroy(); charts[key]=null; } }catch(e){}
-}
+/* ==================== CHART UTILS ==================== */
+function destroyChart(key){ try{ if(charts[key]){ charts[key].destroy(); charts[key]=null; } }catch(e){} }
 
-// render charts for Slide1 & Slide2 (uses ALL data)
+/* ==================== CHARTS & ANALITIK ==================== */
+/* ==================== CHARTS & ANALITIK ==================== */
+let stokGlobal = {}; // ✅ Simpan stok agar narasi AI sinkron
+
 function renderAllCharts(rows){
-  // prepare per-month (Keluar and Total)
-  const perMonth = {};
-  rows.forEach(r=>{
-    const d = new Date(r.__date.getFullYear(), r.__date.getMonth(), 1);
-    const key = d.toISOString();
-    perMonth[key] = perMonth[key] || { keluar:0, total:0 };
-    perMonth[key].keluar += r.Keluar;
-    perMonth[key].total += (r.Masuk + r.Keluar + r.Mati);
-  });
-  const monthKeys = Object.keys(perMonth).sort();
-  const monthLabels = monthKeys.map(k=> new Date(k).toLocaleDateString('id-ID',{month:'short', year:'numeric'}));
-  const keluarVals = monthKeys.map(k=> perMonth[k].keluar);
-  const totalVals = monthKeys.map(k=> perMonth[k].total);
+  const sorted = [...rows].sort((a,b)=> a.__date - b.__date);
+  stokGlobal = {}; // reset setiap render
 
-  destroyChart('chartKeluar');
-  charts.chartKeluar = new Chart($('#chartKeluar').getContext('2d'), {
-    type:'bar',
-    data:{ labels:monthLabels, datasets:[{ label:'Keluar', data:keluarVals }] },
-    options:{ plugins:{ legend:{ display:false }, datalabels:{ display:false } }, responsive:true }
-  });
+  // === Hitung stok berjalan per jenis (lebih akurat) ===
+const runningStok = {}; // stok berjalan tiap jenis
+sorted.forEach(r=>{
+  const nama = (r.Bibit || 'Lainnya').trim();
+  runningStok[nama] = runningStok[nama] || 0;
+  runningStok[nama] = runningStok[nama] + r.Masuk - r.Keluar - r.Mati;
+  if (runningStok[nama] < 0) runningStok[nama] = 0; // stok tak boleh minus
 
-  destroyChart('chartBulan');
-  charts.chartBulan = new Chart($('#chartBulan').getContext('2d'), {
-    type:'bar',
-    data:{ labels:monthLabels, datasets:[{ label:'Total', data:totalVals }] },
-    options:{ plugins:{ legend:{ display:false }, datalabels:{ display:false } }, responsive:true }
+  stokGlobal[nama] = stokGlobal[nama] || { stok:0, masuk:0, keluar:0, mati:0 };
+  stokGlobal[nama].stok   = runningStok[nama];  // stok akhir real
+  stokGlobal[nama].masuk  += r.Masuk;
+  stokGlobal[nama].keluar += r.Keluar;
+  stokGlobal[nama].mati   += r.Mati;
+});
+
+
+  // pastikan stok tidak negatif
+  Object.keys(stokGlobal).forEach(k=>{
+    if (stokGlobal[k].stok < 0) stokGlobal[k].stok = 0;
   });
 
-  // Stok per jenis & cashflow per jenis
-  const byJenis = {};
-  rows.forEach(r=>{
-    const k = r.Bibit || 'Lainnya';
-    byJenis[k] = byJenis[k] || { masuk:0, keluar:0, mati:0, stok:0 };
-    byJenis[k].masuk += r.Masuk;
-    byJenis[k].keluar += r.Keluar;
-    byJenis[k].mati += r.Mati;
-    byJenis[k].stok += (r.Masuk - r.Keluar - r.Mati);
-  });
-  const jenisLabels = Object.keys(byJenis).sort();
-  const stokVals = jenisLabels.map(j=> Math.max(0, Math.round(byJenis[j].stok)));
-  const masukVals = jenisLabels.map(j=> Math.round(byJenis[j].masuk));
-  const outVals = jenisLabels.map(j=> Math.round(byJenis[j].keluar + byJenis[j].mati));
+  const jenisLabels = Object.keys(stokGlobal).sort();
+  const stokVals  = jenisLabels.map(j=> stokGlobal[j].stok);
+  const masukVals = jenisLabels.map(j=> stokGlobal[j].masuk);
+  const outVals   = jenisLabels.map(j=> stokGlobal[j].keluar + stokGlobal[j].mati);
 
+  // total sinkron (juga untuk AI)
+  const totalMasuk  = masukVals.reduce((a,b)=>a+b,0);
+  const totalKeluar = jenisLabels.reduce((a,b)=>a + stokGlobal[b].keluar,0);
+  const totalMati   = jenisLabels.reduce((a,b)=>a + stokGlobal[b].mati,0);
+  const totalStok   = totalMasuk - totalKeluar - totalMati;
+
+  // update kartu
+  $('#valMasuk').textContent  = totalMasuk.toLocaleString('id-ID');
+  $('#valKeluar').textContent = totalKeluar.toLocaleString('id-ID');
+  $('#valMati').textContent   = totalMati.toLocaleString('id-ID');
+  $('#valStok').textContent   = totalStok.toLocaleString('id-ID');
+  $('#valJenis').textContent  = jenisLabels.length;
+
+  // === Grafik stok per jenis ===
   destroyChart('chartStok');
   charts.chartStok = new Chart($('#chartStok').getContext('2d'), {
     type:'bar',
-    data:{ labels:jenisLabels, datasets:[{ label:'Stok', data:stokVals }] },
+    data:{ labels:jenisLabels, datasets:[{ label:'Stok Akhir', data:stokVals }] },
     options:{ plugins:{ legend:{ display:false } }, responsive:true }
   });
 
+  // === Grafik cashflow ===
   destroyChart('chartCashflow');
   charts.chartCashflow = new Chart($('#chartCashflow').getContext('2d'), {
     type:'line',
@@ -452,15 +497,43 @@ function renderAllCharts(rows){
     options:{ responsive:true }
   });
 
-  // sumber doughnut
+  // === Grafik bulanan ===
+  const perMonth = {};
+  sorted.forEach(r=>{
+    const d = new Date(r.__date.getFullYear(), r.__date.getMonth(), 1);
+    const key = d.toISOString();
+    perMonth[key] = perMonth[key] || { keluar:0, total:0 };
+    perMonth[key].keluar += r.Keluar;
+    perMonth[key].total  += (r.Masuk + r.Keluar + r.Mati);
+  });
+
+  const monthKeys   = Object.keys(perMonth).sort();
+  const monthLabels = monthKeys.map(k=> new Date(k).toLocaleDateString('id-ID',{month:'short', year:'numeric'}));
+  const keluarPerBln= monthKeys.map(k=> perMonth[k].keluar);
+  const totalPerBln = monthKeys.map(k=> perMonth[k].total);
+
+  destroyChart('chartKeluar');
+  charts.chartKeluar = new Chart($('#chartKeluar').getContext('2d'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[{ label:'Keluar', data:keluarPerBln }] },
+    options:{ plugins:{ legend:{ display:false } }, responsive:true }
+  });
+
+  destroyChart('chartBulan');
+  charts.chartBulan = new Chart($('#chartBulan').getContext('2d'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[{ label:'Total Aktivitas', data:totalPerBln }] },
+    options:{ plugins:{ legend:{ display:false } }, responsive:true }
+  });
+
+  // === Komposisi sumber ===
   const bySumber = {};
-  rows.forEach(r=>{
-    const s = (r.Sumber||'Tidak Diketahui').toString();
-    bySumber[s] = bySumber[s] || 0;
-    bySumber[s] += r.Masuk;
+  sorted.forEach(r=>{
+    const s = (r.Sumber||'Tidak Diketahui').toString().trim();
+    bySumber[s] = (bySumber[s] || 0) + r.Masuk;
   });
   const sumberLabels = Object.keys(bySumber);
-  const sumberVals = sumberLabels.map(k=> bySumber[k]);
+  const sumberVals   = sumberLabels.map(k=> bySumber[k]);
 
   destroyChart('chartSumber');
   charts.chartSumber = new Chart($('#chartSumber').getContext('2d'), {
@@ -470,10 +543,9 @@ function renderAllCharts(rows){
   });
 }
 
-// render table for slide 3 — only Sengon Potting
+/* ============== TABEL SENGON (SLIDE 3) ============== */
 function renderSengonTable(rows){
-  const filtered = rows.filter(r => (r.Bibit||'').toString().toLowerCase().includes('sengon potting') || (r.Bibit||'').toString().toLowerCase() === 'sengon potting');
-  // sort desc date and limit 300
+  const filtered = rows.filter(r => (r.Bibit||'').toString().toLowerCase().includes('sengon potting'));
   filtered.sort((a,b)=> b.__date - a.__date);
   const top = filtered.slice(0,300);
   const tbody = $('#tbodySengon');
@@ -508,12 +580,11 @@ async function fetchWeatherNow(){
     $('#weatherDesc').textContent = 'Gagal memuat cuaca';
   }
 }
-
 function renderWeatherCards(json){
   try{
     const w = json.current_weather;
     const d = json.daily;
-    const icon = (w.weathercode>=80) ? '⛈' : (w.weathercode>=51) ? '🌧' : (w.weathercode>=45) ? '🌫' : (w.weathercode>=1) ? '🌤' : '☀️';
+    const icon = (w.weathercode>=80) ? '⏱⛈' : (w.weathercode>=51) ? '🌧' : (w.weathercode>=45) ? '🌫' : (w.weathercode>=1) ? '🌤' : '☀️';
     $('#weatherIcon').textContent = icon;
     $('#weatherDesc').textContent = 'Rantau, Tapin';
     $('#weatherData').textContent = `🌡 ${w.temperature}°C | 💨 ${w.windspeed} km/j`;
@@ -524,7 +595,6 @@ function renderWeatherCards(json){
     $('#cardRainProb').textContent = `${d.precipitation_probability_max[0]}%`;
   }catch(e){}
 }
-
 function renderForecastTable(daily){
   try{
     const fc = $('#forecastContainer');
@@ -534,12 +604,11 @@ function renderForecastTable(daily){
       const tmin = daily.temperature_2m_min[i];
       const tmax = daily.temperature_2m_max[i];
       const label = new Date(t).toLocaleDateString('id-ID',{weekday:'short', day:'2-digit', month:'short'});
-      return `<tr class=""><td style="padding:.5rem .6rem;text-align:left;">${label}</td><td style="text-align:center">${ico}</td><td style="text-align:center">${tmin}–${tmax}</td><td style="text-align:center">${p}%</td></tr>`;
+      return `<tr><td style="padding:.5rem .6rem;text-align:left;">${label}</td><td style="text-align:center">${ico}</td><td style="text-align:center">${tmin}–${tmax}</td><td style="text-align:center">${p}%</td></tr>`;
     }).join('');
     fc.innerHTML = `<div style="overflow:auto"><table style="width:100%"><thead><tr style="background:rgba(0,0,0,.03)"><th style="padding:.5rem .6rem;text-align:left">Tanggal</th><th>Ikon</th><th>Suhu (°C)</th><th>Peluang Hujan (%)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }catch(e){}
 }
-
 function renderWeatherCharts(daily){
   try{
     const labels = daily.time.map(t=> new Date(t).toLocaleDateString('id-ID',{weekday:'short'}));
@@ -571,9 +640,8 @@ function renderWeatherCharts(daily){
   }catch(e){ console.error(e); }
 }
 
-/* ============== MAPS ============== */
+/* ============== MAP (SLIDE 10) ============== */
 function initMaps(){
-  // map nursery (slide 4 interface is an iframe My Maps, we will show marker on slide10 map)
   try{
     const mapW = L.map('mapWeather').setView(NURSERY_COORD, 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapW);
@@ -585,8 +653,7 @@ function initMaps(){
 const totalSlides = document.querySelectorAll('.slide').length;
 let currentSlide = 0;
 function buildDots(){
-  const wrap = $('#dots');
-  wrap.innerHTML = '';
+  const wrap = $('#dots'); wrap.innerHTML = '';
   for(let i=0;i<totalSlides;i++){
     const d = document.createElement('div');
     d.className = 'dot' + (i===0 ? ' active' : '');
@@ -596,8 +663,7 @@ function buildDots(){
   }
 }
 function buildNavNums(){
-  const nav = $('#navRow');
-  nav.innerHTML = '';
+  const nav = $('#navRow'); nav.innerHTML = '';
   for(let i=0;i<totalSlides;i++){
     const b = document.createElement('button');
     b.className = 'navbtn' + (i===0 ? ' active' : '');
@@ -622,42 +688,157 @@ function prevSlide(){ gotoSlide((currentSlide-1+totalSlides)%totalSlides); }
 let autoTimer = null;
 function startAuto(){ autoTimer = setInterval(nextSlide, 8000); }
 function stopAuto(){ if(autoTimer) clearInterval(autoTimer); autoTimer=null; }
-
-/* handle actions when entering slide */
 function onSlideEnter(idx){
-  // Slide 0 & 1: ensure charts & tables are rendered using ALL data
-  if(idx===0 || idx===1){
-    renderCards(bibitDataAll);
-    renderAllCharts(bibitDataAll);
-  }
-  // Slide 2: Sengon table only
+  if(idx===0 || idx===1){ renderCards(bibitDataAll); renderAllCharts(bibitDataAll); }
   if(idx===2){ renderSengonTable(bibitDataAll); }
-  // Slide 3 (my maps) nothing — iframe shows it
-  // Slide 4..9 weather-related
-  if(idx===4 || idx===5 || idx===6 || idx===7 || idx===8){
-    if(!weatherData) fetchWeatherNow();
-  }
-  // Slide 9 (mapWeather) initialize map if needed
-  if(idx===9) { initMaps(); }
+  if(idx===4 || idx===5 || idx===6 || idx===7 || idx===8){ if(!weatherData) fetchWeatherNow(); }
+  if(idx===9){ initMaps(); }
+}
+
+/* ============== AI VOICE (SLIDE 11) ============== */
+function formatNumber(num){ return (+num||0).toLocaleString('id-ID'); }
+function generateAINarrative(){
+  if(!bibitDataAll || bibitDataAll.length === 0) return "Data belum tersedia.";
+  const byJenis = {};
+  const sorted = [...bibitDataAll].sort((a,b)=> a.__date - b.__date);
+  sorted.forEach(r=>{
+    const k=(r.Bibit||'Lainnya').trim();
+    byJenis[k] = byJenis[k] || { stok:0, masuk:0, keluar:0, mati:0 };
+    byJenis[k].stok   += r.Masuk - r.Keluar - r.Mati;
+    byJenis[k].masuk  += r.Masuk;
+    byJenis[k].keluar += r.Keluar;
+    byJenis[k].mati   += r.Mati;
+  });
+  const jenisLabels = Object.keys(byJenis);
+  const totalMasuk  = jenisLabels.reduce((a,j)=>a+byJenis[j].masuk,0);
+  const totalKeluar = jenisLabels.reduce((a,j)=>a+byJenis[j].keluar,0);
+  const totalMati   = jenisLabels.reduce((a,j)=>a+byJenis[j].mati,0);
+  const totalStok   = totalMasuk - totalKeluar - totalMati;
+
+  const today = new Date();
+  const hariIni = bibitDataAll.filter(r=> r.__date &&
+    r.__date.getDate()===today.getDate() &&
+    r.__date.getMonth()===today.getMonth() &&
+    r.__date.getFullYear()===today.getFullYear()
+  );
+  const masukHari = hariIni.reduce((a,b)=>a+b.Masuk,0);
+  const keluarHari= hariIni.reduce((a,b)=>a+b.Keluar,0);
+  const matiHari  = hariIni.reduce((a,b)=>a+b.Mati,0);
+  const persenMati= ((matiHari/((masukHari+keluarHari)||1))*100).toFixed(2);
+
+  // top 3 stok
+  const sortedJenis = Object.entries(byJenis).sort((a,b)=> b[1].stok - a[1].stok);
+  const [t1,t2,t3] = sortedJenis.slice(0,3).map(x=>({nama:x[0],stok:x[1].stok}));
+
+  let suhu="31", hujan="60";
+  if(weatherData?.current_weather) suhu=weatherData.current_weather.temperature;
+  if(weatherData?.daily?.precipitation_probability_max) hujan=weatherData.daily.precipitation_probability_max[0];
+
+  const tren = keluarHari > masukHari ? "meningkat" : "menurun";
+  const efisiensi = 100 - ((totalMati/(totalMasuk||1))*100);
+  const statusStok = totalStok > 10000 ? "aman" : (totalStok < 3000 ? "menipis" : "stabil");
+
+  return `
+Halo, saya Montana AI — asisten analitik pembibitan digital Anda.
+
+📊 Stok akhir saat ini: ${formatNumber(totalStok)} unit, dari ${jenisLabels.length} jenis bibit aktif.
+Hari ini tercatat ${formatNumber(masukHari)} masuk, ${formatNumber(keluarHari)} keluar, dan ${formatNumber(matiHari)} mati (${persenMati}% dari aktivitas harian).
+
+🌱 Stok tertinggi: ${t1?.nama || "-"} (${formatNumber(t1?.stok || 0)}), lalu ${t2?.nama || "-"} dan ${t3?.nama || "-"}.
+Tren distribusi minggu ini cenderung ${tren}.
+
+Efisiensi pembibitan: ${efisiensi.toFixed(1)}%. Status stok umum: *${statusStok}*.
+
+☁️ Cuaca Rantau Tapin: sekitar ${suhu}°C, peluang hujan ${hujan}%.
+Kondisi aman untuk penanaman pagi–siang.
+
+✅ Kesimpulan: stok stabil dan aktivitas lapangan on-track. Pantau jenis rentan dan pertahankan kualitas pengelolaan bibit.
+
+Montana AI — selesai.
+`.trim();
+}
+function speakText(text){
+  if(!('speechSynthesis' in window)) return alert('Browser tidak mendukung SpeechSynthesis.');
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "id-ID"; utter.rate = 1; utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
+}
+function typeWriterEffect(text, el, callback){
+  el.textContent = ""; let i=0; const speed=28;
+  (function type(){
+    if(i<text.length){ el.textContent += text.charAt(i); el.scrollTop = el.scrollHeight; i++; setTimeout(type, speed); }
+    else if(callback) callback();
+  })();
+}
+function startAIBriefing(){
+  const text = generateAINarrative();
+  const el = $("#aiNarrative");
+  const status = $("#aiStatus");
+  const replay = $("#btnReplayAI");
+  const start = $("#btnStartAI");
+  status.textContent = "🔊 Montana AI sedang membacakan laporan...";
+  start.style.display="none"; replay.classList.add("hidden");
+  speakText(text);
+  typeWriterEffect(text, el, ()=>{ status.textContent = "✅ Laporan selesai dibacakan oleh Montana AI."; replay.classList.remove("hidden"); });
 }
 
 /* ============== BOOT ============== */
+async function loadAndRender(showUpdatedMsg=false){
+  // paksa hapus cache lama v1 setiap reload (sesuai requirement)
+  localStorage.removeItem("montana_bibit_cache_v1");
+
+  showLoading(showUpdatedMsg ? "Memuat ulang data…" : "Memuat data bibit…");
+  const raw = await fetchWithCache(SHEET_URL);
+  const fixedRaw = ensureGamalRaw(raw);   // ✅ perbaikan “Gamal” SEBELUM normalisasi
+  const normalized = normalizeRows(fixedRaw);
+  bibitDataAll = normalized;
+
+  renderCards(bibitDataAll);
+  renderAllCharts(bibitDataAll);
+  renderSengonTable(bibitDataAll);
+  fetchWeatherNow().catch(e=>console.warn(e));
+
+  if(showUpdatedMsg){
+    $('#loadingText').textContent = "✅ Data berhasil diperbarui.";
+    setTimeout(()=> showLoading(null), 900);
+  }else{
+    showLoading(null);
+  }
+}
+
 async function boot(){
   try{
-    showLoading('Memuat data bibit…');
     buildDots();
     buildNavNums();
+
+    // listeners AI
+    document.getElementById("btnStartAI").addEventListener("click", startAIBriefing);
+    document.getElementById("btnReplayAI").addEventListener("click", startAIBriefing);
+
+    // tombol refresh
+    document.getElementById("btnRefreshData").addEventListener("click", async ()=>{
+      try{
+        // hapus cache key versi aktif
+        localStorage.removeItem(CACHE_KEY);
+        await loadAndRender(true);
+        gotoSlide(0);
+      }catch(e){
+        console.error(e);
+        alert("Gagal menyegarkan data. Coba ulangi.");
+      }
+    });
+
     // keyboard nav
     document.addEventListener('keydown', (e)=>{
       if(e.key === 'ArrowRight') { stopAuto(); nextSlide(); }
       if(e.key === 'ArrowLeft') { stopAuto(); prevSlide(); }
       if(/^[1-9]$/.test(e.key) || e.key === '0') {
-        let n = parseInt(e.key,10);
-        if(e.key === '0') n = 10;
+        let n = parseInt(e.key,10); if(e.key === '0') n = 10;
         if(n>=1 && n<=totalSlides){ stopAuto(); gotoSlide(n-1); }
       }
     });
-    // swipe support
+    // swipe
     let startX = 0;
     const slidesEl = $('#slides');
     slidesEl.addEventListener('touchstart', e=> startX = e.changedTouches[0].screenX, {passive:true});
@@ -667,156 +848,19 @@ async function boot(){
       else if(endX > startX + 50) { stopAuto(); prevSlide(); }
     }, {passive:true});
 
-    // fetch bibit data
-    const raw = await fetchWithCache(SHEET_URL);
-    const normalized = normalizeRows(raw);
-    bibitDataAll = normalized; // all data used by slide1&2
-    // render initial
-    renderCards(bibitDataAll);
-    renderAllCharts(bibitDataAll);
-    renderSengonTable(bibitDataAll); // prepare slide3
-    // start weather fetch in background
-    fetchWeatherNow().catch(e=>console.warn(e));
+    await loadAndRender(false);
 
-    // remove loading
-    showLoading(null);
-
-    // init nav / autoplay
     startAuto();
-
-    // dark toggle
-    $('#darkToggle').addEventListener('click', ()=>{
-      document.documentElement.classList.toggle('dark');
-      $('#darkToggle').textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
-    });
-
-    // initial slide enter
     gotoSlide(0);
   } catch(e){
     console.error('boot error', e);
-    $('#loadingText').textContent = 'Gagal memuat data. Cek koneksi atau endpoint Apps Script.';
+    $('#loadingText').textContent = '❌ Gagal memuat data. Cek koneksi atau endpoint Apps Script.';
   }
 }
-/* ========= SLIDE 11 - Montana AI Voice Briefing ========= */
-function formatNumber(num){ return num.toLocaleString('id-ID'); }
 
-function generateAINarrative(){
-  if(!bibitDataAll || bibitDataAll.length === 0) return "Data belum tersedia.";
-
-  const masuk = bibitDataAll.reduce((a,b)=>a+b.Masuk,0);
-  const keluar = bibitDataAll.reduce((a,b)=>a+b.Keluar,0);
-  const mati = bibitDataAll.reduce((a,b)=>a+b.Mati,0);
-  const stok = masuk - keluar - mati;
-  const jenisSet = new Set(bibitDataAll.map(x=>x.Bibit));
-  const jenisCount = jenisSet.size;
-
-  // Hari ini (jika data ada)
-  const today = new Date();
-  const hariIni = bibitDataAll.filter(r=>r.__date && 
-    r.__date.getDate()===today.getDate() &&
-    r.__date.getMonth()===today.getMonth());
-  const masukHari = hariIni.reduce((a,b)=>a+b.Masuk,0);
-  const keluarHari = hariIni.reduce((a,b)=>a+b.Keluar,0);
-  const matiHari = hariIni.reduce((a,b)=>a+b.Mati,0);
-  const persenMati = ((matiHari/(masukHari+keluarHari+1))*100).toFixed(2);
-
-  // Top 3 stok tertinggi
-  const byJenis = {};
-  bibitDataAll.forEach(r=>{
-    const k=r.Bibit; byJenis[k]=byJenis[k]||0;
-    byJenis[k]+=r.Masuk-r.Keluar-r.Mati;
-  });
-  const sorted = Object.entries(byJenis).sort((a,b)=>b[1]-a[1]);
-  const [top1,top2,top3] = sorted.slice(0,3).map(x=>({nama:x[0],stok:x[1]}));
-
-  // Cuaca (optional)
-  let suhu="31", hujan="60";
-  if(weatherData?.current_weather) suhu=weatherData.current_weather.temperature;
-  if(weatherData?.daily?.precipitation_probability_max) hujan=weatherData.daily.precipitation_probability_max[0];
-
-  // Analisis tren sederhana
-  const tren = keluarHari > masukHari ? "meningkat" : "menurun";
-  const efisiensi = 100 - ((mati/(masuk+1))*100);
-  const statusStok = stok > 10000 ? "aman" : (stok < 3000 ? "menipis" : "stabil");
-
-  const narasi = `
-Halo, saya Montana AI — asisten analitik pembibitan digital Anda.
-Hari ini, sistem telah memperbarui data harian dari nursery utama di Tapin.
-
-📊 Berdasarkan pencatatan terakhir, total stok bibit mencapai ${formatNumber(stok)} unit,
-terdiri dari ${jenisCount} jenis tanaman aktif yang sedang dalam tahap persemaian dan penanaman.
-
-Selama periode ini, tercatat ${formatNumber(masukHari)} bibit baru masuk ke area nursery,
-sementara ${formatNumber(keluarHari)} bibit telah didistribusikan ke lapangan.
-Sebanyak ${formatNumber(matiHari)} bibit tidak bertahan (${persenMati}% dari total aktivitas harian).
-
-🌱 Jenis bibit dengan stok tertinggi saat ini adalah ${top1?.nama || "-"} (${formatNumber(top1?.stok || 0)} bibit),
-diikuti oleh ${top2?.nama || "-"} dan ${top3?.nama || "-"}.
-Secara keseluruhan, tren distribusi minggu ini menunjukkan kecenderungan ${tren} dibanding periode sebelumnya.
-
-Tingkat efisiensi pembibitan saat ini berada di angka ${efisiensi.toFixed(1)}%,
-menandakan proses pengelolaan harian berjalan optimal.
-Status stok nursery secara umum tergolong *${statusStok}*.
-
-☁️ Dari sisi cuaca, suhu rata-rata di wilayah Rantau Tapin hari ini mencapai ${suhu}°C,
-dengan peluang hujan sekitar ${hujan}%. Kondisi ini dinilai aman untuk kegiatan penanaman pagi hingga siang hari.
-
-✅ Kesimpulan AI:
-Kondisi nursery stabil, stok mencukupi, dan aktivitas penanaman berjalan sesuai target.
-Terus jaga performa tim lapangan dan pantau jenis bibit rentan untuk memastikan keberlanjutan.
-
-Saya Montana AI — menutup laporan hari ini. 
-Sampai jumpa di pembaruan berikutnya, dan tetap semangat menanam untuk bumi yang lebih hijau 🌿
-  `.trim();
-
-  return narasi;
-}
-
-function speakText(text){
-  if(!('speechSynthesis' in window)) return alert('Browser tidak mendukung SpeechSynthesis.');
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "id-ID";
-  utter.rate = 1;
-  utter.pitch = 1;
-  window.speechSynthesis.speak(utter);
-}
-
-function typeWriterEffect(text, el, callback){
-  el.textContent = "";
-  let i=0;
-  const speed=28;
-  function type(){
-    if(i<text.length){
-      el.textContent += text.charAt(i);
-      el.scrollTop = el.scrollHeight;
-      i++;
-      setTimeout(type, speed);
-    } else if(callback) callback();
-  }
-  type();
-}
-
-function startAIBriefing(){
-  const text = generateAINarrative();
-  const el = document.getElementById("aiNarrative");
-  const status = document.getElementById("aiStatus");
-  const replay = document.getElementById("btnReplayAI");
-  const start = document.getElementById("btnStartAI");
-  status.textContent = "🔊 Montana AI sedang membacakan laporan...";
-  start.style.display="none"; replay.classList.add("hidden");
-  speakText(text);
-  typeWriterEffect(text, el, ()=>{
-    status.textContent = "✅ Laporan selesai dibacakan oleh Montana AI.";
-    replay.classList.remove("hidden");
-  });
-}
-
-document.getElementById("btnStartAI").addEventListener("click", startAIBriefing);
-document.getElementById("btnReplayAI").addEventListener("click", startAIBriefing);
-// start
+document.getElementById("btnStartAI")?.addEventListener("click", startAIBriefing);
+document.getElementById("btnReplayAI")?.addEventListener("click", startAIBriefing);
 document.addEventListener('DOMContentLoaded', boot, {once:true});
-</script>
+  </script>
 </body>
 </html>
-
