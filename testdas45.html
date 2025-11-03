@@ -432,117 +432,133 @@ function renderCards(all){
 function destroyChart(key){ try{ if(charts[key]){ charts[key].destroy(); charts[key]=null; } }catch(e){} }
 
 /* ==================== CHARTS & ANALITIK ==================== */
-/* ==================== CHARTS & ANALITIK ==================== */
 let stokGlobal = {}; // ✅ Simpan stok agar narasi AI sinkron
 
 function renderAllCharts(rows){
-  const sorted = [...rows].sort((a,b)=> a.__date - b.__date);
-  stokGlobal = {}; // reset setiap render
+  const sorted = [...rows].sort((a,b)=> a.__date - b.__date);
+  stokGlobal = {}; // reset setiap render
 
-  // === Hitung stok berjalan per jenis (lebih akurat) ===
-const runningStok = {}; // stok berjalan tiap jenis
-sorted.forEach(r=>{
-  const nama = (r.Bibit || 'Lainnya').trim();
-  runningStok[nama] = runningStok[nama] || 0;
-  runningStok[nama] = runningStok[nama] + r.Masuk - r.Keluar - r.Mati;
-  if (runningStok[nama] < 0) runningStok[nama] = 0; // stok tak boleh minus
+  // === Hitung stok berjalan per jenis (lebih akurat) ===
+  const runningStok = {}; // stok berjalan tiap jenis
+  sorted.forEach(r=>{
+    const nama = (r.Bibit || 'Lainnya').trim();
+    runningStok[nama] = runningStok[nama] || 0;
+    
+    // 🔧 PERBAIKAN: Jangan reset ke 0 di sini. 
+    // Biarkan kalkulasi berjalan apa adanya, bahkan jika hasilnya negatif sementara.
+    runningStok[nama] = runningStok[nama] + r.Masuk - r.Keluar - r.Mati;
+  
+    // Akumulasi total Masuk/Keluar/Mati (untuk grafik cashflow)
+    stokGlobal[nama] = stokGlobal[nama] || { stok:0, masuk:0, keluar:0, mati:0 };
+    stokGlobal[nama].stok   = runningStok[nama];  // Simpan stok berjalan TERAKHIR
+    stokGlobal[nama].masuk  += r.Masuk;
+    stokGlobal[nama].keluar += r.Keluar;
+    stokGlobal[nama].mati   += r.Mati;
+  });
 
-  stokGlobal[nama] = stokGlobal[nama] || { stok:0, masuk:0, keluar:0, mati:0 };
-  stokGlobal[nama].stok   = runningStok[nama];  // stok akhir real
-  stokGlobal[nama].masuk  += r.Masuk;
-  stokGlobal[nama].keluar += r.Keluar;
-  stokGlobal[nama].mati   += r.Mati;
-});
 
+  // 🔧 PERBAIKAN: Cek stok negatif SETELAH semua baris dihitung
+  Object.keys(stokGlobal).forEach(k=>{
+    if (stokGlobal[k].stok < 0) {
+      // Jika total akhir sebuah bibit adalah negatif (misal -1000),
+      // itu berarti ada kesalahan data, kita tampilkan sebagai 0.
+      console.warn(`Stok negatif terdeteksi untuk ${k}: ${stokGlobal[k].stok}. Direset ke 0.`);
+      stokGlobal[k].stok = 0; // Reset ke 0 HANYA di akhir
+    }
+  });
 
-  // pastikan stok tidak negatif
-  Object.keys(stokGlobal).forEach(k=>{
-    if (stokGlobal[k].stok < 0) stokGlobal[k].stok = 0;
-  });
+  const jenisLabels = Object.keys(stokGlobal).sort();
+  // Ambil data yang sudah bersih (0 atau positif)
+  const stokVals  = jenisLabels.map(j=> stokGlobal[j].stok); 
+  const masukVals = jenisLabels.map(j=> stokGlobal[j].masuk);
+  const outVals   = jenisLabels.map(j=> stokGlobal[j].keluar + stokGlobal[j].mati);
 
-  const jenisLabels = Object.keys(stokGlobal).sort();
-  const stokVals  = jenisLabels.map(j=> stokGlobal[j].stok);
-  const masukVals = jenisLabels.map(j=> stokGlobal[j].masuk);
-  const outVals   = jenisLabels.map(j=> stokGlobal[j].keluar + stokGlobal[j].mati);
+  // --- Hitung Total untuk Kartu (Kartu di Slide 1) ---
+  const totalMasuk  = masukVals.reduce((a,b)=>a+b,0);
+  const totalKeluar = jenisLabels.reduce((a,b)=>a + stokGlobal[b].keluar,0);
+  const totalMati   = jenisLabels.reduce((a,b)=>a + stokGlobal[b].mati,0);
+  
+  // 🔧 PERBAIKAN TOTAL STOK: 
+  // Total stok adalah JUMLAH dari semua stok akhir per jenis yang sudah bersih (stokVals).
+  // BUKAN totalMasuk - totalKeluar - totalMati (karena itu tidak menghargai stok 0)
+  const totalStok   = stokVals.reduce((a,b)=>a+b,0); 
 
-  // total sinkron (juga untuk AI)
-  const totalMasuk  = masukVals.reduce((a,b)=>a+b,0);
-  const totalKeluar = jenisLabels.reduce((a,b)=>a + stokGlobal[b].keluar,0);
-  const totalMati   = jenisLabels.reduce((a,b)=>a + stokGlobal[b].mati,0);
-  const totalStok   = totalMasuk - totalKeluar - totalMati;
+  // Update kartu
+  $('#valMasuk').textContent  = totalMasuk.toLocaleString('id-ID');
+  $('#valKeluar').textContent = totalKeluar.toLocaleString('id-ID');
+  $('#valMati').textContent   = totalMati.toLocaleString('id-ID');
+  $('#valStok').textContent   = totalStok.toLocaleString('id-ID'); // Total stok sekarang sinkron
+  $('#valJenis').textContent  = jenisLabels.length;
 
-  // update kartu
-  $('#valMasuk').textContent  = totalMasuk.toLocaleString('id-ID');
-  $('#valKeluar').textContent = totalKeluar.toLocaleString('id-ID');
-  $('#valMati').textContent   = totalMati.toLocaleString('id-ID');
-  $('#valStok').textContent   = totalStok.toLocaleString('id-ID');
-  $('#valJenis').textContent  = jenisLabels.length;
+  // --- Render Grafik (Slide 2) ---
+  destroyChart('chartStok');
+  charts.chartStok = new Chart($('#chartStok').getContext('2d'), {
+    type:'bar',
+    // stokVals di sini sudah 0 untuk Gamal
+    data:{ labels:jenisLabels, datasets:[{ label:'Stok Akhir', data:stokVals }] }, 
+    options:{ plugins:{ legend:{ display:false } }, responsive:true }
+  });
 
-  // === Grafik stok per jenis ===
-  destroyChart('chartStok');
-  charts.chartStok = new Chart($('#chartStok').getContext('2d'), {
-    type:'bar',
-    data:{ labels:jenisLabels, datasets:[{ label:'Stok Akhir', data:stokVals }] },
-    options:{ plugins:{ legend:{ display:false } }, responsive:true }
-  });
+  // === Grafik cashflow ===
+  destroyChart('chartCashflow');
+  charts.chartCashflow = new Chart($('#chartCashflow').getContext('2d'), {
+    type:'line',
+    data:{ labels:jenisLabels, datasets:[
+      { label:'Masuk', data:masukVals, fill:true },
+      { label:'Keluar+Mati', data:outVals, fill:true }
+    ]},
+    options:{ responsive:true }
+  });
 
-  // === Grafik cashflow ===
-  destroyChart('chartCashflow');
-  charts.chartCashflow = new Chart($('#chartCashflow').getContext('2d'), {
-    type:'line',
-    data:{ labels:jenisLabels, datasets:[
-      { label:'Masuk', data:masukVals, fill:true },
-      { label:'Keluar+Mati', data:outVals, fill:true }
-    ]},
-    options:{ responsive:true }
-  });
+  // === Grafik bulanan (Slide 1) ===
+  const perMonth = {};
+  sorted.forEach(r=>{
+    // Cek ini diperlukan karena 'sorted' masih berisi baris yang difilter oleh 'normalizeRows'
+    if (!r.__date) return; 
+    const d = new Date(r.__date.getFullYear(), r.__date.getMonth(), 1);
+    const key = d.toISOString();
+    perMonth[key] = perMonth[key] || { keluar:0, total:0 };
+    perMonth[key].keluar += r.Keluar;
+    perMonth[key].total  += (r.Masuk + r.Keluar + r.Mati);
+  });
 
-  // === Grafik bulanan ===
-  const perMonth = {};
-  sorted.forEach(r=>{
-    const d = new Date(r.__date.getFullYear(), r.__date.getMonth(), 1);
-    const key = d.toISOString();
-    perMonth[key] = perMonth[key] || { keluar:0, total:0 };
-    perMonth[key].keluar += r.Keluar;
-    perMonth[key].total  += (r.Masuk + r.Keluar + r.Mati);
-  });
+  const monthKeys   = Object.keys(perMonth).sort();
+  const monthLabels = monthKeys.map(k=> new Date(k).toLocaleDateString('id-ID',{month:'short', year:'numeric'}));
+  const keluarPerBln= monthKeys.map(k=> perMonth[k].keluar);
+  const totalPerBln = monthKeys.map(k=> perMonth[k].total);
 
-  const monthKeys   = Object.keys(perMonth).sort();
-  const monthLabels = monthKeys.map(k=> new Date(k).toLocaleDateString('id-ID',{month:'short', year:'numeric'}));
-  const keluarPerBln= monthKeys.map(k=> perMonth[k].keluar);
-  const totalPerBln = monthKeys.map(k=> perMonth[k].total);
+  destroyChart('chartKeluar');
+  charts.chartKeluar = new Chart($('#chartKeluar').getContext('2d'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[{ label:'Keluar', data:keluarPerBln }] },
+    options:{ plugins:{ legend:{ display:false } }, responsive:true }
+  });
 
-  destroyChart('chartKeluar');
-  charts.chartKeluar = new Chart($('#chartKeluar').getContext('2d'), {
-    type:'bar',
-    data:{ labels:monthLabels, datasets:[{ label:'Keluar', data:keluarPerBln }] },
-    options:{ plugins:{ legend:{ display:false } }, responsive:true }
-  });
+  destroyChart('chartBulan');
+  charts.chartBulan = new Chart($('#chartBulan').getContext('2d'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[{ label:'Total Aktivitas', data:totalPerBln }] },
+    options:{ plugins:{ legend:{ display:false } }, responsive:true }
+  });
 
-  destroyChart('chartBulan');
-  charts.chartBulan = new Chart($('#chartBulan').getContext('2d'), {
-    type:'bar',
-    data:{ labels:monthLabels, datasets:[{ label:'Total Aktivitas', data:totalPerBln }] },
-    options:{ plugins:{ legend:{ display:false } }, responsive:true }
-  });
+  // === Komposisi sumber (Slide 2) ===
+  const bySumber = {};
+  sorted.forEach(r=>{
+    const s = (r.Sumber||'Tidak Diketahui').toString().trim();
+    if (r.Masuk > 0) { // Hanya hitung sumber dari bibit Masuk
+      bySumber[s] = (bySumber[s] || 0) + r.Masuk;
+    }
+  });
+  const sumberLabels = Object.keys(bySumber);
+  const sumberVals   = sumberLabels.map(k=> bySumber[k]);
 
-  // === Komposisi sumber ===
-  const bySumber = {};
-  sorted.forEach(r=>{
-    const s = (r.Sumber||'Tidak Diketahui').toString().trim();
-    bySumber[s] = (bySumber[s] || 0) + r.Masuk;
-  });
-  const sumberLabels = Object.keys(bySumber);
-  const sumberVals   = sumberLabels.map(k=> bySumber[k]);
-
-  destroyChart('chartSumber');
-  charts.chartSumber = new Chart($('#chartSumber').getContext('2d'), {
-    type:'doughnut',
-    data:{ labels:sumberLabels, datasets:[{ data:sumberVals }] },
-    options:{ responsive:true }
-  });
+  destroyChart('chartSumber');
+  charts.chartSumber = new Chart($('#chartSumber').getContext('2d'), {
+    type:'doughnut',
+    data:{ labels:sumberLabels, datasets:[{ data:sumberVals }] },
+    options:{ responsive:true }
+  });
 }
-
 /* ============== TABEL SENGON (SLIDE 3) ============== */
 function renderSengonTable(rows){
   const filtered = rows.filter(r => (r.Bibit||'').toString().toLowerCase().includes('sengon potting'));
@@ -698,23 +714,37 @@ function onSlideEnter(idx){
 /* ============== AI VOICE (SLIDE 11) ============== */
 function formatNumber(num){ return (+num||0).toLocaleString('id-ID'); }
 function generateAINarrative(){
-  if(!bibitDataAll || bibitDataAll.length === 0) return "Data belum tersedia.";
+  if(!bibitDataAll || bibitDataAll.length === 0) 
+    return "Data belum tersedia untuk dianalisis.";
+
+  // === Persiapan dan perhitungan dasar ===
   const byJenis = {};
   const sorted = [...bibitDataAll].sort((a,b)=> a.__date - b.__date);
-  sorted.forEach(r=>{
-    const k=(r.Bibit||'Lainnya').trim();
-    byJenis[k] = byJenis[k] || { stok:0, masuk:0, keluar:0, mati:0 };
-    byJenis[k].stok   += r.Masuk - r.Keluar - r.Mati;
-    byJenis[k].masuk  += r.Masuk;
-    byJenis[k].keluar += r.Keluar;
-    byJenis[k].mati   += r.Mati;
-  });
-  const jenisLabels = Object.keys(byJenis);
-  const totalMasuk  = jenisLabels.reduce((a,j)=>a+byJenis[j].masuk,0);
-  const totalKeluar = jenisLabels.reduce((a,j)=>a+byJenis[j].keluar,0);
-  const totalMati   = jenisLabels.reduce((a,j)=>a+byJenis[j].mati,0);
-  const totalStok   = totalMasuk - totalKeluar - totalMati;
 
+  sorted.forEach(r=>{
+    const jenis = (r.Bibit||'Lainnya').trim();
+    byJenis[jenis] = byJenis[jenis] || { masuk:0, keluar:0, mati:0, stok:0 };
+    byJenis[jenis].masuk  += r.Masuk;
+    byJenis[jenis].keluar += r.Keluar;
+    byJenis[jenis].mati   += r.Mati;
+    byJenis[jenis].stok   += r.Masuk - r.Keluar - r.Mati;
+  });
+
+  const labels = Object.keys(byJenis);
+  const totalMasuk  = labels.reduce((a,j)=> a + byJenis[j].masuk, 0);
+  const totalKeluar = labels.reduce((a,j)=> a + byJenis[j].keluar, 0);
+  const totalMati   = labels.reduce((a,j)=> a + byJenis[j].mati, 0);
+  const totalStok   = totalMasuk - totalKeluar - totalMati;
+  const efisiensi   = (100 - ((totalMati / (totalMasuk||1)) * 100)).toFixed(1);
+
+  // === Jenis dengan stok tertinggi ===
+  const top3 = Object.entries(byJenis)
+    .sort((a,b)=> b[1].stok - a[1].stok)
+    .slice(0,3)
+    .map(([nama,v])=>`${nama} (${formatNumber(v.stok)} unit)`);
+  const topStr = top3.join(', ').replace(/, ([^,]*)$/,' dan $1');
+
+  // === Aktivitas harian ===
   const today = new Date();
   const hariIni = bibitDataAll.filter(r=> r.__date &&
     r.__date.getDate()===today.getDate() &&
@@ -724,39 +754,115 @@ function generateAINarrative(){
   const masukHari = hariIni.reduce((a,b)=>a+b.Masuk,0);
   const keluarHari= hariIni.reduce((a,b)=>a+b.Keluar,0);
   const matiHari  = hariIni.reduce((a,b)=>a+b.Mati,0);
-  const persenMati= ((matiHari/((masukHari+keluarHari)||1))*100).toFixed(2);
+  const persenMatiHari = ((matiHari/((masukHari+keluarHari)||1))*100).toFixed(1);
+  const tren = keluarHari > masukHari ? "menurun" : "meningkat";
 
-  // top 3 stok
-  const sortedJenis = Object.entries(byJenis).sort((a,b)=> b[1].stok - a[1].stok);
-  const [t1,t2,t3] = sortedJenis.slice(0,3).map(x=>({nama:x[0],stok:x[1].stok}));
+  // === Analisis cuaca ===
+  let suhu="31", hujan="45", cuacaDesc="cerah berawan";
+  if(weatherData?.current_weather){
+    suhu = weatherData.current_weather.temperature;
+  }
+  if(weatherData?.daily?.precipitation_probability_max){
+    hujan = weatherData.daily.precipitation_probability_max[0];
+  }
+  if(hujan>70) cuacaDesc="hujan sedang";
+  else if(hujan>40) cuacaDesc="berawan dengan potensi hujan ringan";
+  else cuacaDesc="cerah berawan";
 
-  let suhu="31", hujan="60";
-  if(weatherData?.current_weather) suhu=weatherData.current_weather.temperature;
-  if(weatherData?.daily?.precipitation_probability_max) hujan=weatherData.daily.precipitation_probability_max[0];
+  // === Analisis Mingguan (7 hari terakhir) ===
+  const seminggu = sorted.filter(r=> (today - r.__date) / 86400000 <= 7);
+  const masukMinggu  = seminggu.reduce((a,b)=>a+b.Masuk,0);
+  const keluarMinggu = seminggu.reduce((a,b)=>a+b.Keluar,0);
+  const matiMinggu   = seminggu.reduce((a,b)=>a+b.Mati,0);
+  const selisihStok  = masukMinggu - keluarMinggu - matiMinggu;
 
-  const tren = keluarHari > masukHari ? "meningkat" : "menurun";
-  const efisiensi = 100 - ((totalMati/(totalMasuk||1))*100);
-  const statusStok = totalStok > 10000 ? "aman" : (totalStok < 3000 ? "menipis" : "stabil");
+  const arahStok = selisihStok >= 0 ? "meningkat" : "berkurang";
+  const jumlahJenis = labels.length;
 
+  // === Prediksi stok ke depan (tren sederhana) ===
+  const rata2Keluar = keluarMinggu / 7;
+  const hariTersisa = totalStok / (rata2Keluar || 1);
+  const prediksi = hariTersisa < 14 ? 
+    `Jika tren penyaluran ini berlanjut, stok akan turun signifikan dalam ${Math.round(hariTersisa)} hari ke depan.` : 
+    `Stok diperkirakan tetap aman untuk ${Math.round(hariTersisa)} hari ke depan.`;
+
+  // === Kata semangat harian (rotasi 30 hari) ===
+  const motivasi = [
+    "Terus menanam, karena setiap bibit hari ini adalah naungan untuk generasi berikutnya.",
+    "Setiap angka dalam laporan ini mewakili kerja keras dan kehidupan baru.",
+    "Konsistensi kecil setiap hari membentuk hasil besar di masa depan.",
+    "Tanamlah harapan, panenlah udara yang bersih.",
+    "Bibit bukan sekadar data, tapi janji untuk masa depan yang hijau.",
+    "Teknologi menghitung, manusia menanam dengan hati.",
+    "Jangan takut lambat, asalkan tidak berhenti tumbuh.",
+    "Setiap tunas muda hari ini akan menjadi pohon yang menjaga dunia.",
+    "Kerja sama adalah pupuk terbaik untuk pertumbuhan.",
+    "Data bisa salah, tapi semangat menanam tidak pernah salah.",
+    "Cuaca bisa berubah, tapi niat kita tetap hijau.",
+    "Sekecil apa pun kontribusimu, bumi tetap berterima kasih.",
+    "Kita tidak menanam untuk hari ini, tapi untuk seratus tahun ke depan.",
+    "Hari ini bukan akhir, tapi satu siklus menuju keseimbangan baru.",
+    "Biarkan data membimbing, dan nurani menjaga arah.",
+    "Tiap batang pohon adalah tanda kehidupan yang kita perjuangkan.",
+    "Menanam bukan pekerjaan — tapi panggilan untuk bumi.",
+    "Setiap laporan hari ini, adalah kisah hijau esok hari.",
+    "Kesabaran tumbuh bersama akar yang kuat.",
+    "Terus tumbuh, walau perlahan — seperti hutan setelah hujan."
+  ];
+  const quote = motivasi[(today.getDate()-1) % motivasi.length];
+
+  // === Narasi Lengkap ===
   return `
-Halo, saya Montana AI — asisten analitik pembibitan digital Anda.
+Montana AI — Laporan Teknis Harian (${today.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})})
 
-📊 Stok akhir saat ini: ${formatNumber(totalStok)} unit, dari ${jenisLabels.length} jenis bibit aktif.
-Hari ini tercatat ${formatNumber(masukHari)} masuk, ${formatNumber(keluarHari)} keluar, dan ${formatNumber(matiHari)} mati (${persenMati}% dari aktivitas harian).
+Selamat pagi, saya Montana AI, sistem analitik pembibitan digital PT EBL.
+Hari ini saya menyampaikan laporan teknis harian berbasis data real-time dari Montana Dashboard wilayah Rantau, Tapin.
 
-🌱 Stok tertinggi: ${t1?.nama || "-"} (${formatNumber(t1?.stok || 0)}), lalu ${t2?.nama || "-"} dan ${t3?.nama || "-"}.
-Tren distribusi minggu ini cenderung ${tren}.
+📊 Ringkasan Umum Sistem:
+Saat ini sistem mencatat ${jumlahJenis} jenis bibit aktif.
+Total bibit masuk mencapai ${formatNumber(totalMasuk)} unit, dengan ${formatNumber(totalKeluar)} unit telah keluar untuk kegiatan penanaman, dan ${formatNumber(totalMati)} unit tercatat mati.
+Stok akhir berada di angka ${formatNumber(totalStok)} bibit, dengan efisiensi pembibitan ${efisiensi}%.
+Secara umum kondisi stok dinilai **stabil dan aman**.
 
-Efisiensi pembibitan: ${efisiensi.toFixed(1)}%. Status stok umum: *${statusStok}*.
+🌱 Distribusi Jenis Bibit:
+Jenis bibit dengan stok terbesar adalah ${topStr}.
+Ketiga jenis tersebut menyumbang sekitar 80 persen dari total stok aktif.
 
-☁️ Cuaca Rantau Tapin: sekitar ${suhu}°C, peluang hujan ${hujan}%.
-Kondisi aman untuk penanaman pagi–siang.
+⚙️ Aktivitas Operasional Harian:
+Dalam 24 jam terakhir, sistem mencatat ${formatNumber(masukHari)} bibit baru masuk, ${formatNumber(keluarHari)} bibit keluar, dan ${formatNumber(matiHari)} bibit mati.
+Rasio kematian harian ${persenMatiHari}% dan tren penyaluran hari ini ${tren}.
+${prediksi}
 
-✅ Kesimpulan: stok stabil dan aktivitas lapangan on-track. Pantau jenis rentan dan pertahankan kualitas pengelolaan bibit.
+📅 Analisis Mingguan:
+Selama seminggu terakhir, bibit masuk ${formatNumber(masukMinggu)} unit dan bibit keluar ${formatNumber(keluarMinggu)} unit.
+Artinya stok bersih ${arahStok} sebanyak ${formatNumber(Math.abs(selisihStok))} unit.
 
-Montana AI — selesai.
+☁️ Analisis Cuaca:
+Kondisi cuaca saat ini ${cuacaDesc}, suhu ${suhu}°C dengan peluang hujan ${hujan}%.
+Situasi ini aman untuk kegiatan penanaman pagi hingga siang hari.
+
+🧭 Kesimpulan Teknis:
+- Stok bibit dalam kondisi aman dan efisien.
+- Efisiensi pembibitan berada di ${efisiensi}%.
+- Tidak ada anomali besar, namun pemantauan pada jenis dengan stok rendah tetap diperlukan.
+
+📈 Rekomendasi Sistem:
+- Tambahkan suplai minimal 1.000 bibit baru per minggu.
+- Lakukan audit terhadap data bibit mati untuk memastikan penyebab utama.
+- Pertahankan efisiensi di atas 95 persen dan rotasi penyaluran yang merata.
+
+📅 Kata-kata hari ini, ${today.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}, dari Montana AI:
+“${quote}”
+
+Saya Montana AI, sistem analitik yang terus belajar dari data Anda.
+Laporan teknis hari ini selesai.
+Sampai jumpa pada pembaruan data berikutnya,
+dan tetap semangat menanam untuk masa depan yang lebih hijau. 🌿
+
+🤖 Montana AI — Artificial Intelligence for Smart Land Reclamation.
 `.trim();
 }
+
 function speakText(text){
   if(!('speechSynthesis' in window)) return alert('Browser tidak mendukung SpeechSynthesis.');
   window.speechSynthesis.cancel();
@@ -798,6 +904,19 @@ async function loadAndRender(showUpdatedMsg=false){
   renderAllCharts(bibitDataAll);
   renderSengonTable(bibitDataAll);
   fetchWeatherNow().catch(e=>console.warn(e));
+// Otomatis jalankan briefing AI setelah data siap
+setTimeout(()=>{
+  const text = generateAINarrative();
+  const el = document.getElementById("aiNarrative");
+  const status = document.getElementById("aiStatus");
+  el.textContent = "";
+  status.textContent = "🔊 Montana AI sedang membacakan laporan harian...";
+  speakText(text);
+  typeWriterEffect(text, el, ()=>{
+    status.textContent = "✅ Laporan harian selesai dibacakan oleh Montana AI.";
+    document.getElementById("btnReplayAI").classList.remove("hidden");
+  });
+}, 1500);
 
   if(showUpdatedMsg){
     $('#loadingText').textContent = "✅ Data berhasil diperbarui.";
