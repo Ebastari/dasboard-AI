@@ -741,7 +741,7 @@ function generateAINarrative(){
   const top3 = Object.entries(byJenis)
     .sort((a,b)=> b[1].stok - a[1].stok)
     .slice(0,3)
-    .map(([nama,v])=>`${nama} (${formatNumber(v.stok)} unit)`);
+    .map(([nama,v])=>`${nama} (${formatNumber(v.stok)} bibit)`);
   const topStr = top3.join(', ').replace(/, ([^,]*)$/,' dan $1');
 
   // === Aktivitas harian ===
@@ -820,7 +820,7 @@ Hari ini saya menyampaikan laporan teknis harian berbasis data real-time dari Mo
 
 📊 Ringkasan Umum Sistem:
 Saat ini sistem mencatat ${jumlahJenis} jenis bibit aktif.
-Total bibit masuk mencapai ${formatNumber(totalMasuk)} unit, dengan ${formatNumber(totalKeluar)} unit telah keluar untuk kegiatan penanaman, dan ${formatNumber(totalMati)} unit tercatat mati.
+Total bibit masuk mencapai ${formatNumber(totalMasuk)} bibit, dengan ${formatNumber(totalKeluar)} bibit telah keluar untuk kegiatan penanaman, dan ${formatNumber(totalMati)} bibit tercatat mati.
 Stok akhir berada di angka ${formatNumber(totalStok)} bibit, dengan efisiensi pembibitan ${efisiensi}%.
 Secara umum kondisi stok dinilai **stabil dan aman**.
 
@@ -834,8 +834,8 @@ Rasio kematian harian ${persenMatiHari}% dan tren penyaluran hari ini ${tren}.
 ${prediksi}
 
 📅 Analisis Mingguan:
-Selama seminggu terakhir, bibit masuk ${formatNumber(masukMinggu)} unit dan bibit keluar ${formatNumber(keluarMinggu)} unit.
-Artinya stok bersih ${arahStok} sebanyak ${formatNumber(Math.abs(selisihStok))} unit.
+Selama seminggu terakhir, bibit masuk ${formatNumber(masukMinggu)} bibit dan bibit keluar ${formatNumber(keluarMinggu)} bibit.
+Artinya stok bersih ${arahStok} sebanyak ${formatNumber(Math.abs(selisihStok))} bibit.
 
 ☁️ Analisis Cuaca:
 Kondisi cuaca saat ini ${cuacaDesc}, suhu ${suhu}°C dengan peluang hujan ${hujan}%.
