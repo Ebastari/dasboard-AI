@@ -863,12 +863,22 @@ dan tetap semangat menanam untuk masa depan yang lebih hijau. 🌿
 `.trim();
 }
 
+// KODE BARU UNTUK WEBSITE ANDA (berfungsi di aplikasi dan di browser)
 function speakText(text){
-  if(!('speechSynthesis' in window)) return alert('Browser tidak mendukung SpeechSynthesis.');
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "id-ID"; utter.rate = 1; utter.pitch = 1;
-  window.speechSynthesis.speak(utter);
+  // Cek apakah "tombol khusus" Android ada?
+  if (window.AndroidTTS && typeof window.AndroidTTS.speak === 'function') {
+    // Jika ya, tekan tombol itu. Ini akan mengaktifkan suara di aplikasi.
+    window.AndroidTTS.speak(text);
+  } else {
+    // Jika tidak ada, berarti sedang di browser biasa. Pakai sistem suara bawaan browser.
+    console.warn("Jembatan AndroidTTS tidak ditemukan. Menggunakan SpeechSynthesis web standar.");
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "id-ID";
+      window.speechSynthesis.speak(utter);
+    }
+  }
 }
 function typeWriterEffect(text, el, callback){
   el.textContent = ""; let i=0; const speed=28;
@@ -983,3 +993,4 @@ document.addEventListener('DOMContentLoaded', boot, {once:true});
   </script>
 </body>
 </html>
+
